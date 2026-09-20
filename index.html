@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Таблиця балів - Покерочек</title>
+    <meta name="description" content="Прототип таблиці підрахунку очок для гри Покерочек">
+    <link rel="stylesheet" href="css/style.css">
+    <script defer src="js/storage.js"></script>
+    <script defer src="js/games/pokerochok.js"></script>
+    <script defer src="js/app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="setup-panel" id="setupPanel">
+        <div class="main-title">
+          <h1 class="name-current-game">Покерочек</h1>
+        </div>
+
+        <fieldset class="player-count">
+          <legend class="player-qty">Кількість гравців</legend>
+          <label>
+            <input type="radio" name="playerCount" value="2">
+            <span>2</span>
+          </label>
+          <label>
+            <input type="radio" name="playerCount" value="3">
+            <span>3</span>
+          </label>
+          <label>
+            <input type="radio" name="playerCount" value="4" checked>
+            <span>4</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="game-length">
+          <legend>Режим гри</legend>
+          <label>
+            <input type="radio" name="gameLength" value="short">
+            <span id="shortGameLabel">Скорочена 1-4</span>
+          </label>
+          <label>
+            <input type="radio" name="gameLength" value="full" checked>
+            <span id="fullGameLabel">Довга 1-8</span>
+          </label>
+        </fieldset>
+
+        <div class="name-grid" id="playerNameFields"></div>
+
+        <div class="setup-actions">
+          <button class="primary-button" id="startGameButton" type="button">Грати</button>
+          <button class="secondary-button hidden" id="resumeGameButton" type="button">Продовжити гру</button>
+        </div>
+      </section>
+
+      <section class="game-panel hidden" id="gamePanel">
+        <header class="game-header">
+          <div>
+            <p class="eyebrow">Таблиця балів</p>
+            <h1>Pokerochok</h1>
+          </div>
+          <div class="game-actions">
+            <button class="secondary-button hidden" id="resultsButton" type="button">Результати</button>
+            <button class="secondary-button btn-new-game" id="newGameButton" type="button">Нова гра</button>
+          </div>
+        </header>
+
+        <section class="status-strip" aria-live="polite">
+          <div>
+            <span class="status-label">Раунд</span>
+            <strong id="currentRoundLabel">1</strong>
+          </div>
+          <div>
+            <span class="status-label">Фаза</span>
+            <strong id="currentPhaseLabel">Заказ</strong>
+          </div>
+          <div>
+            <span class="status-label">Гравець</span>
+            <strong id="activePlayerLabel">Гравець 1</strong>
+          </div>
+          <div class="round-order-status" id="roundOrderStatus">
+            <span class="status-label">Замовлення</span>
+            <strong class="round-order-progress" id="roundOrderProgress">Замовлено: 0 / 1</strong>
+            <span class="round-order-classification hidden" id="roundOrderClassification"></span>
+          </div>
+        </section>
+
+        <section class="current-turn-action" id="currentTurnAction" aria-live="polite">
+          <div class="current-turn-copy">
+            <span class="status-label">Обов'язок</span>
+            <strong class="current-turn-player" id="currentTurnPlayer">Гравець 1</strong>
+            <p class="current-turn-remaining hidden" id="currentTurnRemaining"></p>
+          </div>
+          <button class="primary-button current-turn-button" id="currentTurnButton" type="button">Замовити</button>
+        </section>
+
+        <div class="table-wrap" aria-label="Pokerochok score table">
+          <table class="score-table" id="scoreTable"></table>
+        </div>
+
+      </section>
+
+      <div class="number-picker-overlay hidden" id="numberPickerOverlay" aria-hidden="true">
+        <div
+          class="number-picker-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="numberPickerTitle"
+          tabindex="-1"
+        >
+          <div class="number-picker-header">
+            <div>
+              <span class="status-label" id="numberPickerTitle">Заказ взяток</span>
+              <strong id="numberPickerPlayer">Гравець 1</strong>
+              <p class="hint" id="numberPickerHint"></p>
+            </div>
+            <button class="icon-button" id="numberPickerCloseButton" type="button" aria-label="Close">x</button>
+          </div>
+          <div class="game-choice-section hidden" id="numberPickerGameChoiceSection">
+            <span class="status-label">Оберіть гру</span>
+            <div
+              class="game-choice-buttons"
+              id="numberPickerGameChoices"
+              role="group"
+              aria-label="Вибір гри"
+            ></div>
+          </div>
+          <span class="status-label number-picker-values-label hidden" id="numberPickerValuesLabel">Кількість взяток</span>
+          <div class="modal-value-buttons" id="numberPickerValues"></div>
+          <button class="secondary-button modal-cancel" id="numberPickerCancelButton" type="button">Відмінити</button>
+        </div>
+      </div>
+
+      <div class="final-results-overlay hidden" id="finalResultsOverlay" aria-hidden="true">
+        <section
+          class="final-results-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finalResultsTitle"
+          aria-describedby="finalWinnerNames finalWinnerScore"
+          tabindex="-1"
+        >
+          <header class="final-winner">
+            <span class="final-trophy" aria-hidden="true">🏆</span>
+            <span class="status-label" id="finalResultsTitle">ПЕРЕМОЖЕЦЬ</span>
+            <strong class="final-winner-names" id="finalWinnerNames"></strong>
+            <span class="final-winner-score" id="finalWinnerScore"></span>
+          </header>
+          <div class="final-standings" id="finalStandings" role="list" aria-label="Підсумкові місця"></div>
+          <div class="final-results-actions">
+            <button class="primary-button" id="finalNewGameButton" type="button">Нова гра</button>
+            <button class="secondary-button" id="finalExitButton" type="button">Вийти</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
