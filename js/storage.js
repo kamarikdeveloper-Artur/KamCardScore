@@ -2,19 +2,27 @@
   "use strict";
 
   const CURRENT_GAME_KEY = "cardscore.currentGame";
+  const MARIAGE_CURRENT_GAME_KEY = "cardscore.currentGame.mariage";
   const GAME_HISTORY_KEY = "cardscore.gameHistory";
+  const POKER_GAME_TYPE = "poker";
+  const LEGACY_POKER_GAME_TYPE = "poker" + "ochok";
 
-  function saveGame(gameState) {
-    localStorage.setItem(CURRENT_GAME_KEY, JSON.stringify(gameState));
+  function normalizeGameType(gameType) {
+    if (!gameType || gameType === LEGACY_POKER_GAME_TYPE) return POKER_GAME_TYPE;
+    return gameType;
   }
 
-  function loadGame() {
-    const rawState = localStorage.getItem(CURRENT_GAME_KEY);
+  function getCurrentGameKey(gameType) {
+    return gameType === "mariage" ? MARIAGE_CURRENT_GAME_KEY : CURRENT_GAME_KEY;
+  }
 
-    if (!rawState) {
-      return null;
-    }
+  function saveGameByType(gameType, gameState) {
+    localStorage.setItem(getCurrentGameKey(gameType), JSON.stringify(gameState));
+  }
 
+  function loadGameByType(gameType) {
+    const rawState = localStorage.getItem(getCurrentGameKey(gameType));
+    if (!rawState) return null;
     try {
       return JSON.parse(rawState);
     } catch (error) {
@@ -22,8 +30,20 @@
     }
   }
 
+  function clearGameByType(gameType) {
+    localStorage.removeItem(getCurrentGameKey(gameType));
+  }
+
+  function saveGame(gameState) {
+    saveGameByType(POKER_GAME_TYPE, gameState);
+  }
+
+  function loadGame() {
+    return loadGameByType(POKER_GAME_TYPE);
+  }
+
   function clearGame() {
-    localStorage.removeItem(CURRENT_GAME_KEY);
+    clearGameByType(POKER_GAME_TYPE);
   }
 
   function createGameId() {
@@ -48,8 +68,8 @@
 
   function getHistoryByGameType(gameType) {
     return loadGameHistory().filter(function (record) {
-      const recordGameType = record && record.gameType ? record.gameType : "pokerochok";
-      return recordGameType === gameType;
+      const recordGameType = normalizeGameType(record && record.gameType);
+      return recordGameType === normalizeGameType(gameType);
     });
   }
 
@@ -74,7 +94,14 @@
 
   window.CardScoreStorage = {
     CURRENT_GAME_KEY,
+    MARIAGE_CURRENT_GAME_KEY,
     GAME_HISTORY_KEY,
+    POKER_GAME_TYPE,
+    normalizeGameType,
+    getCurrentGameKey,
+    saveGameByType,
+    loadGameByType,
+    clearGameByType,
     saveGame,
     loadGame,
     clearGame,

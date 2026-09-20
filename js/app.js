@@ -2,21 +2,30 @@
   "use strict";
 
   const storage = window.CardScoreStorage;
-  const pokerochok = window.Pokerochok;
+  const poker = window.Poker;
+  const mariage = window.Mariage;
+  const POKER_GAME_TYPE = "poker";
+  const LEGACY_POKER_GAME_TYPE = "poker" + "ochok";
 
   const APP_SCREENS = Object.freeze({
     GAME_HUB: "GAME_HUB",
-    POKEROCHOK_MENU: "POKEROCHOK_MENU",
-    POKEROCHOK_SETUP: "POKEROCHOK_SETUP",
-    POKEROCHOK_GAME: "POKEROCHOK_GAME"
+    POKER_MENU: "POKER_MENU",
+    POKER_SETUP: "POKER_SETUP",
+    POKER_GAME: "POKER_GAME",
+    MARIAGE_MENU: "MARIAGE_MENU",
+    MARIAGE_SETUP: "MARIAGE_SETUP",
+    MARIAGE_GAME: "MARIAGE_GAME"
   });
   const GAME_REGISTRY = Object.freeze([
-    Object.freeze({ id: "pokerochok", name: "Покерочок", available: true }),
-    Object.freeze({ id: "mariage", name: "Мар'яж", available: false })
+    Object.freeze({ id: "poker", name: "Покер", available: true }),
+    Object.freeze({ id: "mariage", name: "Мар'яж", available: true })
   ]);
 
   const gameHubPanel = document.getElementById("gameHubPanel");
-  const pokerochokMenuPanel = document.getElementById("pokerochokMenuPanel");
+  const pokerMenuPanel = document.getElementById("pokerMenuPanel");
+  const mariageMenuPanel = document.getElementById("mariageMenuPanel");
+  const mariageSetupPanel = document.getElementById("mariageSetupPanel");
+  const mariageGamePanel = document.getElementById("mariageGamePanel");
   const gameRegistry = document.getElementById("gameRegistry");
   const setupPanel = document.getElementById("setupPanel");
   const gamePanel = document.getElementById("gamePanel");
@@ -62,6 +71,7 @@
 
   let gameState = null;
   let appScreen = APP_SCREENS.GAME_HUB;
+  let mariageController = null;
   let orderEditTurnIndex = null;
   let autoOpenedResultsGameId = null;
   let resultsPreviousFocus = null;
@@ -75,7 +85,7 @@
   }
 
   function getRoundDescriptorsForState(state) {
-    return pokerochok.getPlayableRoundDescriptors(state.playerCount, state.gameLength, state.suitOrder);
+    return poker.getPlayableRoundDescriptors(state.playerCount, state.gameLength, state.suitOrder);
   }
 
   function getRoundKeys(state) {
@@ -91,8 +101,8 @@
 
   function updateGameLengthLabels() {
     const playerCount = getSelectedPlayerCount();
-    const shortLastRound = pokerochok.getBaseRoundCount(playerCount, "short");
-    const fullLastRound = pokerochok.getBaseRoundCount(playerCount, "full");
+    const shortLastRound = poker.getBaseRoundCount(playerCount, "short");
+    const fullLastRound = poker.getBaseRoundCount(playerCount, "full");
 
     document.getElementById("shortGameLabel").textContent = `Скорочена 1-${shortLastRound}`;
     document.getElementById("fullGameLabel").textContent = `Довга 1-${fullLastRound}`;
@@ -124,7 +134,7 @@
   }
 
   function buildRounds(players, gameLength, suitOrder) {
-    const descriptors = pokerochok.getPlayableRoundDescriptors(players.length, gameLength, suitOrder);
+    const descriptors = poker.getPlayableRoundDescriptors(players.length, gameLength, suitOrder);
     const rounds = descriptors.reduce(function (roundMap, descriptor) {
       const results = {};
 
@@ -134,7 +144,7 @@
 
       roundMap[descriptor.key] = {
         ...descriptor,
-        startPlayerIndex: pokerochok.getStartPlayerIndex(descriptor.sequenceIndex, players.length),
+        startPlayerIndex: poker.getStartPlayerIndex(descriptor.sequenceIndex, players.length),
         results
       };
 
@@ -159,14 +169,14 @@
       };
     });
 
-    const suitOrder = pokerochok.createSuitOrder(playerCount);
+    const suitOrder = poker.createSuitOrder(playerCount);
     const roundState = buildRounds(players, gameLength, suitOrder);
 
     return {
       id: storage.createGameId(),
       startedAt: new Date().toISOString(),
       finishedAt: null,
-      gameType: "pokerochok",
+      gameType: POKER_GAME_TYPE,
       gameLength,
       playerCount,
       players,
@@ -182,7 +192,7 @@
 
   function ensureGameMetadata(state) {
     if (!state.gameType) {
-      state.gameType = "pokerochok";
+      state.gameType = POKER_GAME_TYPE;
     }
     if (!state.id || typeof state.id !== "string") {
       state.id = storage.createGameId();
@@ -199,7 +209,7 @@
   }
 
   function getFinalPlayerScore(state, playerId) {
-    const roundKeys = pokerochok.getChronologicalRoundKeys(state);
+    const roundKeys = poker.getChronologicalRoundKeys(state);
     for (let index = roundKeys.length - 1; index >= 0; index -= 1) {
       const result = state.rounds[roundKeys[index]].results[playerId];
       if (result && Number.isFinite(result.totalScore)) return result.totalScore;
@@ -255,7 +265,7 @@
           place: standing.place
         };
       }),
-      rounds: pokerochok.getChronologicalRoundKeys(state).map(function (roundKey) {
+      rounds: poker.getChronologicalRoundKeys(state).map(function (roundKey) {
         const round = state.rounds[roundKey];
         const snapshotRound = {
           id: roundKey,
@@ -294,21 +304,21 @@
   }
 
   function getCurrentRoundDescriptor() {
-    return pokerochok.getRoundDescriptor(gameState, gameState.currentRoundKey);
+    return poker.getRoundDescriptor(gameState, gameState.currentRoundKey);
   }
 
   function getInitialPhaseForRound(state, roundKey) {
-    const descriptor = pokerochok.getRoundDescriptor(state, roundKey);
+    const descriptor = poker.getRoundDescriptor(state, roundKey);
     return descriptor && descriptor.requiresOrder === false ? "actual" : "order";
   }
 
   function calculateResultScore(state, roundKey, ordered, actual) {
-    const descriptor = pokerochok.getRoundDescriptor(state, roundKey);
-    return pokerochok.calculateRoundScore(descriptor.scoringType, ordered, actual);
+    const descriptor = poker.getRoundDescriptor(state, roundKey);
+    return poker.calculateRoundScore(descriptor.scoringType, ordered, actual);
   }
 
   function getCurrentOrder() {
-    return pokerochok.getPlayerOrderForRound(gameState, gameState.currentRoundKey);
+    return poker.getPlayerOrderForRound(gameState, gameState.currentRoundKey);
   }
 
   function getActivePlayerIndex() {
@@ -343,7 +353,7 @@
   function isLoadableGame(loadedGame) {
     return Boolean(
       loadedGame &&
-      (!loadedGame.gameType || loadedGame.gameType === "pokerochok") &&
+      (!loadedGame.gameType || loadedGame.gameType === POKER_GAME_TYPE || loadedGame.gameType === LEGACY_POKER_GAME_TYPE) &&
       Array.isArray(loadedGame.players) &&
       loadedGame.players.length >= 2 &&
       loadedGame.players.length <= 4 &&
@@ -357,13 +367,13 @@
     if (keyMatch) return keyMatch[1];
 
     const candidates = [roundData && roundData.suit, roundData && roundData.label];
-    return pokerochok.SUIT_IDS.find(function (suitId) {
-      return candidates.includes(suitId) || candidates.includes(pokerochok.getSuitSymbol(suitId));
+    return poker.SUIT_IDS.find(function (suitId) {
+      return candidates.includes(suitId) || candidates.includes(poker.getSuitSymbol(suitId));
     }) || null;
   }
 
   function getSavedSuitOrder(loadedGame) {
-    const normalized = pokerochok.normalizeSuitOrder(loadedGame.playerCount, loadedGame.suitOrder);
+    const normalized = poker.normalizeSuitOrder(loadedGame.playerCount, loadedGame.suitOrder);
     if (normalized) return normalized;
 
     if (loadedGame.playerCount === 3) {
@@ -375,11 +385,11 @@
         if (suitId && !suits.includes(suitId)) suits.push(suitId);
         return suits;
       }, []);
-      const inferredOrder = pokerochok.normalizeSuitOrder(loadedGame.playerCount, inferred);
+      const inferredOrder = poker.normalizeSuitOrder(loadedGame.playerCount, inferred);
       if (inferredOrder) return inferredOrder;
     }
 
-    return pokerochok.createSuitOrder(loadedGame.playerCount);
+    return poker.createSuitOrder(loadedGame.playerCount);
   }
 
   function getSourceRound(loadedGame, descriptor) {
@@ -411,9 +421,9 @@
       return savedCurrentRoundKey;
     }
 
-    const savedBaseIdentity = pokerochok.parseBaseRoundKey(savedCurrentRoundKey);
+    const savedBaseIdentity = poker.parseBaseRoundKey(savedCurrentRoundKey);
     if (savedBaseIdentity) {
-      const baseKey = pokerochok.getBaseRoundKey(savedBaseIdentity.baseNumber, savedBaseIdentity.baseDirection);
+      const baseKey = poker.getBaseRoundKey(savedBaseIdentity.baseNumber, savedBaseIdentity.baseDirection);
       if (loadedGame.roundOrder.includes(baseKey)) return baseKey;
     }
 
@@ -427,7 +437,7 @@
 
     const legacyRoundNumber = Number(legacyCurrentRound);
     const legacyBaseKey = Number.isInteger(legacyRoundNumber)
-      ? pokerochok.getBaseRoundKey(legacyRoundNumber, "ascending")
+      ? poker.getBaseRoundKey(legacyRoundNumber, "ascending")
       : null;
     return loadedGame.roundOrder.includes(legacyBaseKey) ? legacyBaseKey : null;
   }
@@ -437,9 +447,9 @@
       return null;
     }
 
-    loadedGame.gameType = "pokerochok";
+    loadedGame.gameType = POKER_GAME_TYPE;
     loadedGame.playerCount = loadedGame.players.length;
-    loadedGame.gameLength = pokerochok.GAME_LENGTHS.includes(loadedGame.gameLength) ? loadedGame.gameLength : "full";
+    loadedGame.gameLength = poker.GAME_LENGTHS.includes(loadedGame.gameLength) ? loadedGame.gameLength : "full";
     loadedGame.suitOrder = getSavedSuitOrder(loadedGame);
 
     const savedCurrentRoundKey = loadedGame.currentRoundKey;
@@ -450,7 +460,7 @@
     descriptors.forEach(function (descriptor) {
       const sourceRound = getSourceRound(loadedGame, descriptor);
       const gameChoice = descriptor.type === "ordered-trump"
-        ? pokerochok.normalizeOrderedGameChoice(
+        ? poker.normalizeOrderedGameChoice(
           sourceRound && sourceRound.gameChoice !== undefined
             ? sourceRound.gameChoice
             : sourceRound && sourceRound.trumpSuit
@@ -474,7 +484,7 @@
 
       const normalizedRound = {
         ...descriptor,
-        startPlayerIndex: pokerochok.getStartPlayerIndex(descriptor.sequenceIndex, loadedGame.playerCount),
+        startPlayerIndex: poker.getStartPlayerIndex(descriptor.sequenceIndex, loadedGame.playerCount),
         results
       };
       if (descriptor.type === "ordered-trump") {
@@ -538,9 +548,12 @@
   function showScreen(screen) {
     appScreen = screen;
     gameHubPanel.classList.toggle("hidden", screen !== APP_SCREENS.GAME_HUB);
-    pokerochokMenuPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKEROCHOK_MENU);
-    setupPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKEROCHOK_SETUP);
-    gamePanel.classList.toggle("hidden", screen !== APP_SCREENS.POKEROCHOK_GAME);
+    pokerMenuPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKER_MENU);
+    mariageMenuPanel.classList.toggle("hidden", screen !== APP_SCREENS.MARIAGE_MENU);
+    mariageSetupPanel.classList.toggle("hidden", screen !== APP_SCREENS.MARIAGE_SETUP);
+    mariageGamePanel.classList.toggle("hidden", screen !== APP_SCREENS.MARIAGE_GAME);
+    setupPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKER_SETUP);
+    gamePanel.classList.toggle("hidden", screen !== APP_SCREENS.POKER_GAME);
   }
 
   function renderGameRegistry() {
@@ -557,7 +570,12 @@
       status.textContent = game.available ? "Відкрити" : "Незабаром";
       button.appendChild(name);
       button.appendChild(status);
-      if (game.available) button.addEventListener("click", showPokerochokMenu);
+      if (game.available) {
+        button.addEventListener("click", function () {
+          if (game.id === "poker") showPokerMenu();
+          if (game.id === "mariage") mariageController.showMenu();
+        });
+      }
       gameRegistry.appendChild(button);
     });
   }
@@ -566,17 +584,17 @@
     showScreen(APP_SCREENS.GAME_HUB);
   }
 
-  function showPokerochokMenu() {
+  function showPokerMenu() {
     menuContinueButton.disabled = !isLoadableGame(storage.loadGame());
-    showScreen(APP_SCREENS.POKEROCHOK_MENU);
+    showScreen(APP_SCREENS.POKER_MENU);
   }
 
   function showSetup() {
-    showScreen(APP_SCREENS.POKEROCHOK_SETUP);
+    showScreen(APP_SCREENS.POKER_SETUP);
   }
 
   function showGame() {
-    showScreen(APP_SCREENS.POKEROCHOK_GAME);
+    showScreen(APP_SCREENS.POKER_GAME);
     autoResolveRemainingActuals();
     persistCurrentGame();
     renderGame();
@@ -679,7 +697,7 @@
   function renderStatus() {
     const activePlayer = getActivePlayer();
     const currentRoundDescriptor = getCurrentRoundDescriptor();
-    const currentGameChoice = currentRoundDescriptor && pokerochok.getOrderedGameChoiceDefinition(currentRoundDescriptor.gameChoice);
+    const currentGameChoice = currentRoundDescriptor && poker.getOrderedGameChoiceDefinition(currentRoundDescriptor.gameChoice);
     currentRoundLabel.textContent = currentRoundDescriptor
       ? `${currentRoundDescriptor.label}${currentGameChoice ? ` ${currentGameChoice.symbol}` : ""}`
       : "";
@@ -701,8 +719,8 @@
       return roundData.results[player.id].ordered;
     });
 
-    return pokerochok.getRoundOrderStatus(
-      pokerochok.getRoundMaximum(descriptor),
+    return poker.getRoundOrderStatus(
+      poker.getRoundMaximum(descriptor),
       orderedValues,
       descriptor.requiresOrder
     );
@@ -753,8 +771,8 @@
 
     let remainingActual = null;
     if (phase === "actual") {
-      const roundMaximum = pokerochok.getRoundMaximum(gameState, gameState.currentRoundKey);
-      remainingActual = pokerochok.getRemainingActualTricks(roundMaximum, getActualValuesBeforeTurn());
+      const roundMaximum = poker.getRoundMaximum(gameState, gameState.currentRoundKey);
+      remainingActual = poker.getRemainingActualTricks(roundMaximum, getActualValuesBeforeTurn());
     }
 
     return {
@@ -804,7 +822,7 @@
       body.appendChild(renderRoundRow(roundKey));
     });
 
-    pokerochok.getFutureRoundPlaceholders(gameState.playerCount, gameState.gameLength).forEach(function (placeholder) {
+    poker.getFutureRoundPlaceholders(gameState.playerCount, gameState.gameLength).forEach(function (placeholder) {
       const row = document.createElement("tr");
       row.className = "future-row";
       row.dataset.roundKey = placeholder.key;
@@ -821,7 +839,7 @@
 
     if (descriptor.type === "ordered-trump") {
       const label = document.createElement("span");
-      const choice = pokerochok.getOrderedGameChoiceDefinition(descriptor.gameChoice);
+      const choice = poker.getOrderedGameChoiceDefinition(descriptor.gameChoice);
       roundCell.classList.add("ordered-round-cell");
       label.className = "ordered-round-index";
       label.textContent = descriptor.label;
@@ -853,7 +871,7 @@
       return roundCell;
     }
 
-    const suit = pokerochok.getSuitDefinition(descriptor.suit);
+    const suit = poker.getSuitDefinition(descriptor.suit);
     if (!suit || !suit.icon) {
       roundCell.textContent = descriptor.label;
       return roundCell;
@@ -873,7 +891,7 @@
   function renderRoundRow(roundKey) {
     const row = document.createElement("tr");
     const roundData = gameState.rounds[roundKey];
-    const descriptor = pokerochok.getRoundDescriptor(gameState, roundKey);
+    const descriptor = poker.getRoundDescriptor(gameState, roundKey);
     const unlocked = isRoundUnlocked(roundKey);
     row.dataset.roundKey = roundKey;
     row.appendChild(createRoundLabelCell(descriptor));
@@ -959,7 +977,7 @@
     const inputPlayerIndex = getInputPlayerIndex();
     const descriptor = getCurrentRoundDescriptor();
     const roundData = getCurrentRoundData();
-    const roundMaximum = pokerochok.getRoundMaximum(gameState, gameState.currentRoundKey);
+    const roundMaximum = poker.getRoundMaximum(gameState, gameState.currentRoundKey);
     const isOrderPhase = gameState.currentPhase === "order";
     const orderInputTurnIndex = getOrderInputTurnIndex();
     const requiresGameChoice = isOrderPhase && descriptor.type === "ordered-trump" && orderInputTurnIndex === 0;
@@ -967,14 +985,14 @@
     const previousOrders = getOrderedValuesBeforeTurnIndex(orderInputTurnIndex);
     const previousActuals = getActualValuesBeforeTurn();
     const disabledOrderValues = isOrderPhase
-      ? pokerochok.getDisabledOrderValues(roundMaximum, previousOrders, isLastPlayer, {
+      ? poker.getDisabledOrderValues(roundMaximum, previousOrders, isLastPlayer, {
         gameState,
         playerIndex: inputPlayerIndex,
         currentRoundKey: gameState.currentRoundKey
       })
       : [];
-    const remainingActual = pokerochok.getRemainingActualTricks(roundMaximum, previousActuals);
-    const allowedActualValues = pokerochok.getAllowedActualValues(roundMaximum, previousActuals);
+    const remainingActual = poker.getRemainingActualTricks(roundMaximum, previousActuals);
+    const allowedActualValues = poker.getAllowedActualValues(roundMaximum, previousActuals);
 
     const title = requiresGameChoice
       ? `${isOrderEditMode() ? "Перезамовлення" : "Заказна"} — Раунд ${descriptor.label}`
@@ -997,7 +1015,7 @@
       hint,
       requiresGameChoice,
       gameChoices: requiresGameChoice
-        ? pokerochok.ORDERED_GAME_CHOICES.map(pokerochok.getOrderedGameChoiceDefinition)
+        ? poker.ORDERED_GAME_CHOICES.map(poker.getOrderedGameChoiceDefinition)
         : [],
       selectedGameChoice: requiresGameChoice ? roundData.gameChoice : null,
       values: isOrderPhase
@@ -1020,7 +1038,7 @@
     numberPickerValuesLabel.classList.toggle("hidden", !options.requiresGameChoice);
     numberPickerGameChoices.innerHTML = "";
     numberPickerValues.innerHTML = "";
-    let selectedGameChoice = pokerochok.normalizeOrderedGameChoice(options.selectedGameChoice);
+    let selectedGameChoice = poker.normalizeOrderedGameChoice(options.selectedGameChoice);
 
     function renderValueButtons() {
       numberPickerValues.innerHTML = "";
@@ -1120,8 +1138,8 @@
       return;
     }
 
-    const order = pokerochok.getPlayerOrderForRound(gameState, roundKey);
-    const descriptor = pokerochok.getRoundDescriptor(gameState, roundKey);
+    const order = poker.getPlayerOrderForRound(gameState, roundKey);
+    const descriptor = poker.getRoundDescriptor(gameState, roundKey);
     const turnIndex = order.indexOf(playerIndex);
     const player = gameState.players[playerIndex];
     const result = gameState.rounds[roundKey].results[player.id];
@@ -1148,7 +1166,7 @@
   }
 
   function enterValue(value, gameChoice) {
-    const roundMaximum = pokerochok.getRoundMaximum(gameState, gameState.currentRoundKey);
+    const roundMaximum = poker.getRoundMaximum(gameState, gameState.currentRoundKey);
     const activePlayer = getInputPlayer();
     const roundData = getCurrentRoundData();
     const result = roundData.results[activePlayer.id];
@@ -1184,15 +1202,15 @@
     const isOrderedRound = descriptor.type === "ordered-trump";
     const isGameChoiceOwner = isOrderedRound && orderInputTurnIndex === 0;
 
-    if (isGameChoiceOwner && !pokerochok.isOrderedGameChoice(gameChoice)) {
+    if (isGameChoiceOwner && !poker.isOrderedGameChoice(gameChoice)) {
       return false;
     }
 
-    if (isOrderedRound && !isGameChoiceOwner && !pokerochok.isOrderedGameChoice(roundData.gameChoice)) {
+    if (isOrderedRound && !isGameChoiceOwner && !poker.isOrderedGameChoice(roundData.gameChoice)) {
       return false;
     }
 
-    if (!pokerochok.isOrderAllowed(roundMaximum, value, previousOrders, isLastPlayer, {
+    if (!poker.isOrderAllowed(roundMaximum, value, previousOrders, isLastPlayer, {
       gameState,
       playerIndex: inputPlayerIndex,
       currentRoundKey: gameState.currentRoundKey
@@ -1227,10 +1245,10 @@
       return false;
     }
 
-    const roundMaximum = pokerochok.getRoundMaximum(gameState, gameState.currentRoundKey);
+    const roundMaximum = poker.getRoundMaximum(gameState, gameState.currentRoundKey);
     const previousActuals = getActualValuesBeforeTurn();
 
-    if (!pokerochok.isActualAllowed(roundMaximum, value, previousActuals)) {
+    if (!poker.isActualAllowed(roundMaximum, value, previousActuals)) {
       return false;
     }
 
@@ -1279,8 +1297,8 @@
       return false;
     }
 
-    const roundMaximum = pokerochok.getRoundMaximum(gameState, gameState.currentRoundKey);
-    const remainingActual = pokerochok.getRemainingActualTricks(roundMaximum, getActualValuesBeforeTurn());
+    const roundMaximum = poker.getRoundMaximum(gameState, gameState.currentRoundKey);
+    const remainingActual = poker.getRemainingActualTricks(roundMaximum, getActualValuesBeforeTurn());
 
     if (remainingActual === 0) {
       fillRemainingActualsWithZero(gameState.currentRoundKey, gameState.currentTurnIndex);
@@ -1310,7 +1328,7 @@
 
   function fillRemainingActualsWithZero(roundKey, startTurnIndex) {
     const roundData = gameState.rounds[roundKey];
-    const order = pokerochok.getPlayerOrderForRound(gameState, roundKey);
+    const order = poker.getPlayerOrderForRound(gameState, roundKey);
 
     order.slice(startTurnIndex).forEach(function (playerIndex) {
       const player = gameState.players[playerIndex];
@@ -1344,7 +1362,7 @@
 
   function clearActualValuesAfterTurn(roundKey, turnIndex) {
     const roundData = gameState.rounds[roundKey];
-    const order = pokerochok.getPlayerOrderForRound(gameState, roundKey);
+    const order = poker.getPlayerOrderForRound(gameState, roundKey);
 
     order.slice(turnIndex + 1).forEach(function (playerIndex) {
       const player = gameState.players[playerIndex];
@@ -1376,14 +1394,14 @@
     }
 
     const roundData = state.rounds[roundKey];
-    const descriptor = pokerochok.getRoundDescriptor(state, roundKey);
-    if (descriptor && descriptor.type === "ordered-trump" && !pokerochok.isOrderedGameChoice(roundData.gameChoice)) {
+    const descriptor = poker.getRoundDescriptor(state, roundKey);
+    if (descriptor && descriptor.type === "ordered-trump" && !poker.isOrderedGameChoice(roundData.gameChoice)) {
       return false;
     }
     const allActualsEntered = state.players.every(function (player) {
       return roundData.results[player.id].actual !== null;
     });
-    const roundMaximum = pokerochok.getRoundMaximum(state, roundKey);
+    const roundMaximum = poker.getRoundMaximum(state, roundKey);
     const actualTotal = getRoundActualTotalForState(state, roundKey);
 
     return allActualsEntered && actualTotal === roundMaximum;
@@ -1391,13 +1409,13 @@
 
   function getRemainingActualTricksThroughTurn(roundKey, turnIndex) {
     const roundData = gameState.rounds[roundKey];
-    const roundMaximum = pokerochok.getRoundMaximum(gameState, roundKey);
-    const order = pokerochok.getPlayerOrderForRound(gameState, roundKey);
+    const roundMaximum = poker.getRoundMaximum(gameState, roundKey);
+    const order = poker.getPlayerOrderForRound(gameState, roundKey);
     const actualValues = order.slice(0, turnIndex + 1).map(function (playerIndex) {
       return roundData.results[gameState.players[playerIndex].id].actual;
     });
 
-    return pokerochok.getRemainingActualTricks(roundMaximum, actualValues);
+    return poker.getRemainingActualTricks(roundMaximum, actualValues);
   }
 
   function areAllOrdersEntered(roundKey) {
@@ -1412,7 +1430,7 @@
   }
 
   function getPreviousRoundTotalScore(state, playerId, roundKey) {
-    const chronologicalRoundKeys = pokerochok.getChronologicalRoundKeys(state);
+    const chronologicalRoundKeys = poker.getChronologicalRoundKeys(state);
     const currentRoundIndex = chronologicalRoundKeys.indexOf(roundKey);
 
     for (let index = currentRoundIndex - 1; index >= 0; index -= 1) {
@@ -1496,7 +1514,7 @@
       return false;
     }
 
-    return pokerochok.getPlayerOrderForRound(gameState, roundKey)[orderEditTurnIndex] === playerIndex;
+    return poker.getPlayerOrderForRound(gameState, roundKey)[orderEditTurnIndex] === playerIndex;
   }
 
   function isResultCellSelectable(roundKey, playerIndex) {
@@ -1520,7 +1538,7 @@
     const playerIndex = gameState.players.findIndex(function (player) {
       return player.id === playerId;
     });
-    const turnIndex = pokerochok.getPlayerOrderForRound(gameState, roundKey).indexOf(playerIndex);
+    const turnIndex = poker.getPlayerOrderForRound(gameState, roundKey).indexOf(playerIndex);
     const activeResult = roundData.results[getActivePlayer().id];
     const result = roundData.results[playerId];
 
@@ -1541,7 +1559,7 @@
     const playerIndex = gameState.players.findIndex(function (player) {
       return player.id === playerId;
     });
-    const turnIndex = pokerochok.getPlayerOrderForRound(gameState, roundKey).indexOf(playerIndex);
+    const turnIndex = poker.getPlayerOrderForRound(gameState, roundKey).indexOf(playerIndex);
     const activeResult = gameState.rounds[roundKey].results[getActivePlayer().id];
     const result = gameState.rounds[roundKey].results[playerId];
 
@@ -1623,23 +1641,29 @@
     persistCurrentGame();
     closeNumberPicker();
     if (isFinalResultsOpen()) closeFinalResultsModal();
-    showPokerochokMenu();
+    showPokerMenu();
   });
 
   menuNewGameButton.addEventListener("click", function () {
     const savedGame = storage.loadGame();
     if (isLoadableGame(savedGame) && !savedGame.chronologyComplete &&
       !window.confirm("Початок нової гри замінить поточну незавершену гру. Історія завершених ігор збережеться. Продовжити?")) {
-      showPokerochokMenu();
+      showPokerMenu();
       return;
     }
     startNewGameSetup({ preserveCurrentUntilStart: true });
   });
 
   menuBackButton.addEventListener("click", showGameHub);
-  setupBackButton.addEventListener("click", showPokerochokMenu);
+  setupBackButton.addEventListener("click", showPokerMenu);
 
   renderPlayerNameFields();
+  mariageController = mariage.initialize({
+    storage,
+    screens: APP_SCREENS,
+    navigate: showScreen,
+    showHub: showGameHub
+  });
   renderGameRegistry();
   showGameHub();
 })();
