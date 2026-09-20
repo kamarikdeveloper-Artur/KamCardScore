@@ -13,6 +13,7 @@
   --success: #157f3f;
   --inactive: #eef0f2;
   --shadow: 0 18px 55px rgba(31, 42, 55, 0.12);
+  --shadow-btn: 0 18px 55px rgba(69,12,120,0.65);
 }
 
 * {
@@ -61,6 +62,7 @@ button:disabled {
   padding: 7px;
 }
 
+.shell-panel,
 .setup-panel,
 .game-panel {
   background: var(--panel);
@@ -69,12 +71,82 @@ button:disabled {
   box-shadow: var(--shadow);
 }
 
+.shell-panel,
 .setup-panel {
   display: grid;
   gap: 20px;
   max-width: 760px;
   margin: 0 auto;
   padding: 10px;
+}
+
+.shell-heading {
+  text-align: center;
+}
+
+.game-registry,
+.menu-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.game-registry {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.game-entry {
+  display: grid;
+  gap: 6px;
+  min-height: 110px;
+  padding: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  color: var(--text);
+  background: var(--panel-soft);
+  text-align: left;
+}
+
+.game-entry strong {
+  font-size: 1.3rem;
+}
+
+.game-entry span,
+.menu-actions button span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.game-entry:not(:disabled):hover,
+.game-entry:not(:disabled):focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.game-entry:disabled,
+.menu-actions button:disabled {
+  color: var(--muted);
+  background: var(--inactive);
+  opacity: 0.75;
+}
+
+.menu-actions {
+  width: min(420px, 100%);
+  margin: 0 auto;
+}
+
+.menu-actions button {
+  min-height: 52px;
+}
+
+.menu-actions button span {
+  display: block;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--accent-strong);
+  outline-offset: 2px;
 }
 
 .main-title{
@@ -350,8 +422,7 @@ h1 {
   position: sticky;
   top: -2px;
   z-index: 3;
-  box-shadow: 0 1px 0 var(--line-strong);
-  box-shadow: 0px 15px 30px 5px rgba(69,12,120,0.65);
+  box-shadow: 0px 15px 30px 5px var(--shadow-btn) ;
 }
 
 .round-header,
@@ -794,6 +865,10 @@ h1 {
 }
 
 @media (max-width: 520px) {
+  .game-registry {
+    grid-template-columns: 1fr;
+  }
+
   .current-turn-action {
     align-items: stretch;
     flex-direction: column;

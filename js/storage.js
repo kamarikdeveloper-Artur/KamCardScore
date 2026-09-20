@@ -46,6 +46,13 @@
     }
   }
 
+  function getHistoryByGameType(gameType) {
+    return loadGameHistory().filter(function (record) {
+      const recordGameType = record && record.gameType ? record.gameType : "pokerochok";
+      return recordGameType === gameType;
+    });
+  }
+
   function archiveCompletedGame(snapshot) {
     if (!snapshot || typeof snapshot.id !== "string" || snapshot.id.length === 0) {
       throw new Error("Completed game snapshot requires a stable ID");
@@ -73,6 +80,7 @@
     clearGame,
     createGameId,
     loadGameHistory,
+    getHistoryByGameType,
     archiveCompletedGame
   };
 })();

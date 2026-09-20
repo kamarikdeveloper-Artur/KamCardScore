@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="uk">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Таблиця балів - Покерочек</title>
-    <meta name="description" content="Прототип таблиці підрахунку очок для гри Покерочек">
+    <title>CardScore</title>
+    <meta name="description" content="CardScore - блокнот для карткових ігор">
     <link rel="stylesheet" href="css/style.css">
     <script defer src="js/storage.js"></script>
     <script defer src="js/games/pokerochok.js"></script>
@@ -12,9 +12,31 @@
   </head>
   <body>
     <main class="app-shell">
-      <section class="setup-panel" id="setupPanel">
+      <section class="shell-panel" id="gameHubPanel">
+        <header class="shell-heading">
+          <p class="eyebrow">Карткові блокноти</p>
+          <h1>CardScore</h1>
+        </header>
+        <div class="game-registry" id="gameRegistry" aria-label="Ігри"></div>
+      </section>
+
+      <section class="shell-panel hidden" id="pokerochokMenuPanel">
+        <header class="shell-heading">
+          <p class="eyebrow">CardScore</p>
+          <h1>Покерочок</h1>
+        </header>
+        <div class="menu-actions">
+          <button class="primary-button" id="menuNewGameButton" type="button">Нова гра</button>
+          <button class="secondary-button" id="menuContinueButton" type="button">Продовжити</button>
+          <button class="secondary-button" type="button" disabled>Історія <span>Незабаром</span></button>
+          <button class="secondary-button" type="button" disabled>Статистика <span>Незабаром</span></button>
+          <button class="secondary-button" id="menuBackButton" type="button">Назад</button>
+        </div>
+      </section>
+
+      <section class="setup-panel hidden" id="setupPanel">
         <div class="main-title">
-          <h1 class="name-current-game">Покерочек</h1>
+          <h1 class="name-current-game">Покерочок</h1>
         </div>
 
         <fieldset class="player-count">
@@ -49,7 +71,7 @@
 
         <div class="setup-actions">
           <button class="primary-button" id="startGameButton" type="button">Грати</button>
-          <button class="secondary-button hidden" id="resumeGameButton" type="button">Продовжити гру</button>
+          <button class="secondary-button" id="setupBackButton" type="button">Назад</button>
         </div>
       </section>
 
@@ -61,6 +83,7 @@
           </div>
           <div class="game-actions">
             <button class="secondary-button hidden" id="resultsButton" type="button">Результати</button>
+            <button class="secondary-button" id="gameMenuButton" type="button">Меню</button>
             <button class="secondary-button btn-new-game" id="newGameButton" type="button">Нова гра</button>
           </div>
         </header>

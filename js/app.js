@@ -4,12 +4,30 @@
   const storage = window.CardScoreStorage;
   const pokerochok = window.Pokerochok;
 
+  const APP_SCREENS = Object.freeze({
+    GAME_HUB: "GAME_HUB",
+    POKEROCHOK_MENU: "POKEROCHOK_MENU",
+    POKEROCHOK_SETUP: "POKEROCHOK_SETUP",
+    POKEROCHOK_GAME: "POKEROCHOK_GAME"
+  });
+  const GAME_REGISTRY = Object.freeze([
+    Object.freeze({ id: "pokerochok", name: "Покерочок", available: true }),
+    Object.freeze({ id: "mariage", name: "Мар'яж", available: false })
+  ]);
+
+  const gameHubPanel = document.getElementById("gameHubPanel");
+  const pokerochokMenuPanel = document.getElementById("pokerochokMenuPanel");
+  const gameRegistry = document.getElementById("gameRegistry");
   const setupPanel = document.getElementById("setupPanel");
   const gamePanel = document.getElementById("gamePanel");
   const playerNameFields = document.getElementById("playerNameFields");
   const startGameButton = document.getElementById("startGameButton");
-  const resumeGameButton = document.getElementById("resumeGameButton");
+  const menuNewGameButton = document.getElementById("menuNewGameButton");
+  const menuContinueButton = document.getElementById("menuContinueButton");
+  const menuBackButton = document.getElementById("menuBackButton");
+  const setupBackButton = document.getElementById("setupBackButton");
   const newGameButton = document.getElementById("newGameButton");
+  const gameMenuButton = document.getElementById("gameMenuButton");
   const resultsButton = document.getElementById("resultsButton");
   const scoreTable = document.getElementById("scoreTable");
   const currentRoundLabel = document.getElementById("currentRoundLabel");
@@ -43,6 +61,7 @@
   const finalExitButton = document.getElementById("finalExitButton");
 
   let gameState = null;
+  let appScreen = APP_SCREENS.GAME_HUB;
   let orderEditTurnIndex = null;
   let autoOpenedResultsGameId = null;
   let resultsPreviousFocus = null;
@@ -162,6 +181,9 @@
   }
 
   function ensureGameMetadata(state) {
+    if (!state.gameType) {
+      state.gameType = "pokerochok";
+    }
     if (!state.id || typeof state.id !== "string") {
       state.id = storage.createGameId();
     }
@@ -321,7 +343,7 @@
   function isLoadableGame(loadedGame) {
     return Boolean(
       loadedGame &&
-      loadedGame.gameType === "pokerochok" &&
+      (!loadedGame.gameType || loadedGame.gameType === "pokerochok") &&
       Array.isArray(loadedGame.players) &&
       loadedGame.players.length >= 2 &&
       loadedGame.players.length <= 4 &&
@@ -415,6 +437,7 @@
       return null;
     }
 
+    loadedGame.gameType = "pokerochok";
     loadedGame.playerCount = loadedGame.players.length;
     loadedGame.gameLength = pokerochok.GAME_LENGTHS.includes(loadedGame.gameLength) ? loadedGame.gameLength : "full";
     loadedGame.suitOrder = getSavedSuitOrder(loadedGame);
@@ -512,15 +535,48 @@
       : null;
   }
 
+  function showScreen(screen) {
+    appScreen = screen;
+    gameHubPanel.classList.toggle("hidden", screen !== APP_SCREENS.GAME_HUB);
+    pokerochokMenuPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKEROCHOK_MENU);
+    setupPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKEROCHOK_SETUP);
+    gamePanel.classList.toggle("hidden", screen !== APP_SCREENS.POKEROCHOK_GAME);
+  }
+
+  function renderGameRegistry() {
+    gameRegistry.replaceChildren();
+    GAME_REGISTRY.forEach(function (game) {
+      const button = document.createElement("button");
+      const name = document.createElement("strong");
+      const status = document.createElement("span");
+      button.type = "button";
+      button.className = "game-entry";
+      button.dataset.gameId = game.id;
+      button.disabled = !game.available;
+      name.textContent = game.name;
+      status.textContent = game.available ? "Відкрити" : "Незабаром";
+      button.appendChild(name);
+      button.appendChild(status);
+      if (game.available) button.addEventListener("click", showPokerochokMenu);
+      gameRegistry.appendChild(button);
+    });
+  }
+
+  function showGameHub() {
+    showScreen(APP_SCREENS.GAME_HUB);
+  }
+
+  function showPokerochokMenu() {
+    menuContinueButton.disabled = !isLoadableGame(storage.loadGame());
+    showScreen(APP_SCREENS.POKEROCHOK_MENU);
+  }
+
   function showSetup() {
-    setupPanel.classList.remove("hidden");
-    gamePanel.classList.add("hidden");
-    resumeGameButton.classList.toggle("hidden", !isLoadableGame(storage.loadGame()));
+    showScreen(APP_SCREENS.POKEROCHOK_SETUP);
   }
 
   function showGame() {
-    setupPanel.classList.add("hidden");
-    gamePanel.classList.remove("hidden");
+    showScreen(APP_SCREENS.POKEROCHOK_GAME);
     autoResolveRemainingActuals();
     persistCurrentGame();
     renderGame();
@@ -609,10 +665,11 @@
     ) openFinalResultsModal();
   }
 
-  function startNewGameSetup() {
+  function startNewGameSetup(options) {
+    const settings = options || {};
     if (gameState && gameState.chronologyComplete) persistCurrentGame();
     if (isFinalResultsOpen()) closeFinalResultsModal();
-    storage.clearGame();
+    if (!settings.preserveCurrentUntilStart) storage.clearGame();
     gameState = null;
     orderEditTurnIndex = null;
     autoOpenedResultsGameId = null;
@@ -1536,7 +1593,9 @@
 
   resultsButton.addEventListener("click", openFinalResultsModal);
   finalExitButton.addEventListener("click", closeFinalResultsModal);
-  finalNewGameButton.addEventListener("click", startNewGameSetup);
+  finalNewGameButton.addEventListener("click", function () {
+    startNewGameSetup();
+  });
 
   startGameButton.addEventListener("click", function () {
     gameState = createGameState();
@@ -1544,7 +1603,7 @@
     showGame();
   });
 
-  resumeGameButton.addEventListener("click", function () {
+  menuContinueButton.addEventListener("click", function () {
     gameState = normalizeLoadedGame(storage.loadGame());
     if (gameState) {
       storage.saveGame(gameState);
@@ -1553,9 +1612,34 @@
   });
 
   newGameButton.addEventListener("click", function () {
-    startNewGameSetup();
+    if (gameState && !gameState.chronologyComplete &&
+      !window.confirm("Початок нової гри замінить поточну незавершену гру. Історія завершених ігор збережеться. Продовжити?")) {
+      return;
+    }
+    startNewGameSetup({ preserveCurrentUntilStart: true });
   });
 
+  gameMenuButton.addEventListener("click", function () {
+    persistCurrentGame();
+    closeNumberPicker();
+    if (isFinalResultsOpen()) closeFinalResultsModal();
+    showPokerochokMenu();
+  });
+
+  menuNewGameButton.addEventListener("click", function () {
+    const savedGame = storage.loadGame();
+    if (isLoadableGame(savedGame) && !savedGame.chronologyComplete &&
+      !window.confirm("Початок нової гри замінить поточну незавершену гру. Історія завершених ігор збережеться. Продовжити?")) {
+      showPokerochokMenu();
+      return;
+    }
+    startNewGameSetup({ preserveCurrentUntilStart: true });
+  });
+
+  menuBackButton.addEventListener("click", showGameHub);
+  setupBackButton.addEventListener("click", showPokerochokMenu);
+
   renderPlayerNameFields();
-  showSetup();
+  renderGameRegistry();
+  showGameHub();
 })();
