@@ -163,6 +163,7 @@ button:disabled {
   align-items: end;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 10px;
 }
 
 .mariage-player-buttons button,

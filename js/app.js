@@ -598,6 +598,22 @@
     showScreen(APP_SCREENS.GAME_HUB);
   }
 
+  function registerServiceWorker() {
+    const localHostnames = ["localhost", "127.0.0.1"];
+    const canRegister = "serviceWorker" in navigator &&
+      (location.protocol === "https:" || localHostnames.includes(location.hostname));
+    if (!canRegister) return;
+
+    const register = function () {
+      navigator.serviceWorker.register("./service-worker.js").catch(function (error) {
+        console.warn("CardScore service worker registration failed.", error);
+      });
+    };
+
+    if (document.readyState === "complete") register();
+    else window.addEventListener("load", register, { once: true });
+  }
+
   function showPokerMenu() {
     menuContinueButton.disabled = !isLoadableGame(storage.loadGame());
     showScreen(APP_SCREENS.POKER_MENU);
@@ -1683,4 +1699,5 @@
   });
   renderGameRegistry();
   showGameHub();
+  registerServiceWorker();
 })();
