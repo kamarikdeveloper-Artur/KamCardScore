@@ -40,8 +40,8 @@
   const resultsButton = document.getElementById("resultsButton");
   const scoreTable = document.getElementById("scoreTable");
   const currentRoundLabel = document.getElementById("currentRoundLabel");
-  const currentPhaseLabel = document.getElementById("currentPhaseLabel");
   const activePlayerLabel = document.getElementById("activePlayerLabel");
+  const roundOrderStatusBar = document.getElementById("roundOrderStatusBar");
   const roundOrderStatus = document.getElementById("roundOrderStatus");
   const roundOrderProgress = document.getElementById("roundOrderProgress");
   const roundOrderClassification = document.getElementById("roundOrderClassification");
@@ -75,6 +75,20 @@
   let orderEditTurnIndex = null;
   let autoOpenedResultsGameId = null;
   let resultsPreviousFocus = null;
+
+  function syncRoundOrderStatusClearance() {
+    if (roundOrderStatusBar.classList.contains("hidden")) {
+      gamePanel.style.removeProperty("--round-order-status-clearance");
+      return;
+    }
+    const clearance = roundOrderStatusBar.getBoundingClientRect().height + 16;
+    gamePanel.style.setProperty("--round-order-status-clearance", `${clearance}px`);
+  }
+
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(syncRoundOrderStatusClearance).observe(roundOrderStatusBar);
+  }
+  window.addEventListener("resize", syncRoundOrderStatusClearance);
 
   function getSelectedPlayerCount() {
     return Number(document.querySelector("input[name='playerCount']:checked").value);
@@ -118,7 +132,7 @@
       wrapper.className = "name-field";
       wrapper.innerHTML = [
         `<label for="playerName${index + 1}">Гравець ${index + 1}</label>`,
-        `<input id="playerName${index + 1}" type="text" maxlength="24" value="Гравець ${index + 1}">`
+        `<input id="playerName${index + 1}" type="text" maxlength="10" value="Гравець ${index + 1}">`
       ].join("");
       playerNameFields.appendChild(wrapper);
     }
@@ -162,7 +176,7 @@
     const gameLength = getSelectedGameLength();
     const nameInputs = Array.from(playerNameFields.querySelectorAll("input"));
     const players = nameInputs.slice(0, playerCount).map(function (input, index) {
-      const cleanName = input.value.trim();
+      const cleanName = input.value.trim().slice(0, 10);
       return {
         id: `p${index + 1}`,
         name: cleanName || `Гравець ${index + 1}`
@@ -703,12 +717,10 @@
       : "";
 
     if (gameState.chronologyComplete) {
-      currentPhaseLabel.textContent = "Завершено";
       activePlayerLabel.textContent = "Раунди завершено";
       return;
     }
 
-    currentPhaseLabel.textContent = gameState.currentPhase === "order" ? "Заказ" : "Фактично";
     activePlayerLabel.textContent = activePlayer ? activePlayer.name : "Добре";
   }
 
@@ -728,9 +740,12 @@
 
   function renderRoundOrderStatus() {
     const status = getCurrentRoundOrderStatus();
-    roundOrderStatus.classList.toggle("hidden", !status.visible);
+    const visible = status.visible && !gameState.chronologyComplete;
+    roundOrderStatusBar.classList.toggle("hidden", !visible);
+    roundOrderStatus.classList.toggle("hidden", !visible);
 
-    if (!status.visible) {
+    if (!visible) {
+      gamePanel.style.removeProperty("--round-order-status-clearance");
       return;
     }
 
@@ -747,6 +762,8 @@
     } else {
       roundOrderClassification.textContent = "";
     }
+
+    requestAnimationFrame(syncRoundOrderStatusClearance);
   }
 
   function getCurrentTurnActionState() {

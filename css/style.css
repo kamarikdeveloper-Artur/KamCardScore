@@ -7,13 +7,12 @@
   --text: #1f2a37;
   --muted: #65758a;
   --accent: #176b87;
-  --accent-strong: #0f5369;
+  --accent-strong: rgb(15, 83, 105);
   --accent-soft: #d9eef4;
   --danger: #b42318;
   --success: #157f3f;
   --inactive: #eef0f2;
   --shadow: 0 18px 55px rgba(31, 42, 55, 0.12);
-  --shadow-btn: 0 18px 55px rgba(69, 12, 120, 0.65);
 }
 
 * {
@@ -191,7 +190,7 @@ button:disabled {
 }
 
 .mariage-message {
-  min-height: 20px;
+  min-height: 5px;
   color: var(--danger);
   font-weight: 700;
 }
@@ -254,6 +253,10 @@ input:focus-visible {
 
 .game-panel {
   padding: 5px;
+  background-image: url("../assets/backgrounds/bg_games.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .game-header,
@@ -433,9 +436,32 @@ h1 {
   font-size: 1.1rem;
 }
 
-/* .round-order-status {
-  flex: 1 1 180px;
-} */
+.round-order-status-bar {
+  position: fixed;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: max(5px, env(safe-area-inset-bottom));
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 40;
+  width: min(560px, calc(100% - 16px));
+  margin: 0 auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(17, 24, 39, 0.25);
+}
+
+.round-order-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  text-align: center;
+}
+
+.round-order-status .status-label {
+  margin-bottom: 0;
+}
 
 .round-order-progress,
 .round-order-classification {
@@ -443,7 +469,6 @@ h1 {
 }
 
 .round-order-classification {
-  margin-top: 3px;
   font-size: 0.92rem;
   font-weight: 900;
 }
@@ -492,12 +517,16 @@ h1 {
 }
 
 .table-wrap {
-  max-height: min(70vh, 760px);
+  max-height: min(75vh, 760px);
   overflow: auto;
   border: 1px solid var(--line);
   border-radius: 5px;
   background: #fff;
   padding: 0 0 10px;
+}
+
+#gamePanel .table-wrap {
+  padding-bottom: var(--round-order-status-clearance, 10px);
 }
 
 .score-table {
@@ -515,20 +544,18 @@ h1 {
 .score-table th {
   height: 35px;
   padding: 3px;
-  background: #e7eef3;
+  background: #f5f351;
 }
 
 .score-table thead th {
   position: sticky;
   top: -2px;
   z-index: 3;
-  box-shadow: var(--shadow-btn) ;
 }
 
 .round-header,
 .round-cell {
   width: 35px;
-  background: #f7fafc;
   font-weight: 800;
 }
 
@@ -544,7 +571,7 @@ h1 {
 .player-header {
   width: 100px;
   min-width: 100px;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .score-header,
@@ -553,13 +580,15 @@ h1 {
 }
 
 .round-cell {
-  font-size: 1rem;
+  font-size: 1.3rem;
+  background: #f5f351;
+
 }
 
 .suit-icon {
   display: block;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   max-width: 100%;
   margin: 0 auto;
   object-fit: contain;
@@ -986,6 +1015,11 @@ h1 {
 
   .current-turn-button {
     width: 100%;
+  }
+
+  .round-order-status {
+    gap: 4px 10px;
+    flex-wrap: wrap;
   }
 
   .game-choice-buttons,

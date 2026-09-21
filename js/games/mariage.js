@@ -286,7 +286,6 @@
       menuContinue: document.getElementById("mariageMenuContinueButton"),
       setupNames: document.getElementById("mariagePlayerNameFields"),
       roundLabel: document.getElementById("mariageRoundLabel"),
-      phaseLabel: document.getElementById("mariagePhaseLabel"),
       orderingLabel: document.getElementById("mariageOrderingLabel"),
       orderLabel: document.getElementById("mariageOrderLabel"),
       newRound: document.getElementById("mariageNewRoundButton"),
@@ -338,7 +337,7 @@
         label.textContent = `Гравець ${index + 1}`;
         input.id = label.htmlFor;
         input.type = "text";
-        input.maxLength = 24;
+        input.maxLength = 10;
         input.value = existing[index] || `Гравець ${index + 1}`;
         wrapper.append(label, input);
         elements.setupNames.appendChild(wrapper);
@@ -367,7 +366,9 @@
         startedAt: new Date().toISOString(),
         skiMode: selectedValue("mariageSkiMode"),
         repaintMode: selectedValue("mariageRepaintMode"),
-        players: names.map(function (input, index) { return { id: `p${index + 1}`, name: input.value.trim() }; })
+        players: names.map(function (input, index) {
+          return { id: `p${index + 1}`, name: input.value.trim().slice(0, 10) };
+        })
       });
       persist();
       showGame();
@@ -637,7 +638,6 @@
       const round = state.activeRound;
       if (!isSupportedPlayerCount(state.playerCount)) {
         elements.roundLabel.textContent = "—";
-        elements.phaseLabel.textContent = "Недоступно";
         elements.orderingLabel.textContent = "—";
         elements.orderLabel.textContent = "—";
         elements.newRound.classList.add("hidden");
@@ -650,8 +650,6 @@
         return;
       }
       elements.roundLabel.textContent = round ? String(round.sequence) : state.rounds.length ? `Завершено ${state.rounds.length}` : "0";
-      const phaseLabels = { "ordering-player": "Заказ", "order-points": "Заказ", "physical-play": "Гра", results: "Взято" };
-      elements.phaseLabel.textContent = round ? phaseLabels[round.phase] : "Готово";
       const orderingPlayer = round && getPlayer(state, round.orderingPlayerId || draftOrderingPlayerId);
       elements.orderingLabel.textContent = orderingPlayer ? orderingPlayer.name : "—";
       elements.orderLabel.textContent = round && round.orderPoints !== null ? String(round.orderPoints) : "—";
