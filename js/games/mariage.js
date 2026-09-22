@@ -69,8 +69,42 @@
       repaint: false,
       resultPlayerIndex: null,
       resolvedPlayerIds: [],
-      results: {}
+      results: {},
+      primary: { resolution: "normal", actuals: {} },
+      startState: {
+        scores: state.players.reduce(function (scores, player) {
+          scores[player.id] = player.score;
+          return scores;
+        }, {}),
+        cycleState: JSON.parse(JSON.stringify(state.cycleState))
+      }
     };
+  }
+
+  function getDealer(state) {
+    if (!state || !state.players.length) return null;
+    const sequence = state.activeRound ? state.activeRound.sequence : state.rounds.length + 1;
+    return state.players[(sequence - 1) % state.players.length];
+  }
+
+  function restoreRoundStart(state, round) {
+    if (!round || !round.startState) throw new Error("Round-start state is unavailable");
+    state.players.forEach(function (player) {
+      player.score = round.startState.scores[player.id];
+    });
+    state.cycleState = JSON.parse(JSON.stringify(round.startState.cycleState));
+  }
+
+  function replayLatestRound(state) {
+    const round = state.activeRound || state.rounds[state.rounds.length - 1];
+    if (!round) throw new Error("There is no round to replay");
+    if (!round.startState) throw new Error("Round-start state is unavailable");
+    if (!state.activeRound) state.rounds.pop();
+    restoreRoundStart(state, round);
+    state.activeRound = createRound(state);
+    state.activeRound.id = round.id;
+    state.activeRound.sequence = round.sequence;
+    return state.activeRound;
   }
 
   function applySki(state, playerId) {
@@ -207,6 +241,11 @@
       skiCycleNumber: skiEvent && skiEvent.cycleNumber,
       skiCycleId: skiEvent && skiEvent.cycleId
     });
+    round.primary = round.primary || getRoundPrimary(round);
+    round.primary.resolution = "normal";
+    round.primary.actuals[player.id] = quickAction === "bite"
+      ? { action: "bite", actualPoints: null }
+      : { action: "actual", actualPoints: actual };
     round.resolvedPlayerIds = getResolvedPlayerIds(round);
     if (getUnresolvedPlayers(state).length === 0) finishRound(state);
     return round.results[player.id];
@@ -223,9 +262,17 @@
 
   function resolveRepaint(state) {
     const round = state.activeRound;
-    if (!round || round.phase !== "physical-play" || !round.orderingPlayerId) throw new Error("Repaint is unavailable");
+    if (!round || !["physical-play", "results"].includes(round.phase) || !round.orderingPlayerId) {
+      throw new Error("Repaint is unavailable");
+    }
+    if (round.phase === "results" && getResolvedPlayerIds(round).length) {
+      restoreRoundStart(state, round);
+      round.results = {};
+      round.resolvedPlayerIds = [];
+    }
     const repaintEvent = applyRepaint(state, round.orderingPlayerId);
     round.repaint = true;
+    round.primary = { resolution: "repaint", actuals: {} };
     state.players.forEach(function (player) {
       const isOrderingPlayer = player.id === round.orderingPlayerId;
       round.results[player.id] = buildResult(state, player.id, {
@@ -250,6 +297,104 @@
     round.resultPlayerIndex = null;
     state.rounds.push(round);
     state.activeRound = null;
+  }
+
+  function getRoundPrimary(round) {
+    if (round.primary) return JSON.parse(JSON.stringify(round.primary));
+    const primary = { resolution: round.repaint ? "repaint" : "normal", actuals: {} };
+    if (primary.resolution === "repaint") return primary;
+    Object.keys(round.results || {}).forEach(function (playerId) {
+      const result = round.results[playerId];
+      if (result.actualPoints === null && result.semantic && result.semantic.bite && !result.semantic.ski) {
+        primary.actuals[playerId] = { action: "bite", actualPoints: null };
+      } else {
+        primary.actuals[playerId] = { action: "actual", actualPoints: result.actualPoints };
+      }
+    });
+    return primary;
+  }
+
+  function recalculateMariageGame(gameDraft) {
+    const source = JSON.parse(JSON.stringify(gameDraft));
+    if (!isSupportedPlayerCount(source.playerCount) || source.players.length !== source.playerCount ||
+      !MODES.includes(source.settings.skiMode) || !MODES.includes(source.settings.repaintMode)) {
+      throw new Error("Некоректні налаштування гри.");
+    }
+    const playerIds = source.players.map(function (player) { return player.id; });
+    if (new Set(playerIds).size !== playerIds.length) throw new Error("Повторюються ідентифікатори гравців.");
+    const rebuilt = JSON.parse(JSON.stringify(source));
+    rebuilt.players.forEach(function (player) { player.score = 0; });
+    rebuilt.cycleState = createPlayerCycleState(rebuilt.players);
+    rebuilt.rounds = [];
+    rebuilt.activeRound = null;
+    const rounds = source.rounds.concat(source.activeRound ? [source.activeRound] : []);
+
+    rounds.forEach(function (original, index) {
+      const completed = index < source.rounds.length;
+      if (original.sequence !== index + 1 || typeof original.id !== "string") {
+        throw new Error("Порушено порядок раундів.");
+      }
+      const primary = getRoundPrimary(original);
+      if (!["normal", "repaint"].includes(primary.resolution) ||
+        !primary.actuals || typeof primary.actuals !== "object" || Array.isArray(primary.actuals)) {
+        throw new Error(`Некоректні дані раунду ${original.sequence}.`);
+      }
+      const round = createRound(rebuilt);
+      round.id = original.id;
+      rebuilt.activeRound = round;
+      const hasOrder = original.orderingPlayerId !== null || original.orderPoints !== null;
+      if (hasOrder) {
+        if (!playerIds.includes(original.orderingPlayerId) ||
+          !isValidOrderPoints(rebuilt.playerCount, original.orderPoints)) {
+          throw new Error(`Некоректний заказ у раунді ${original.sequence}.`);
+        }
+        round.orderingPlayerId = original.orderingPlayerId;
+        round.orderPoints = original.orderPoints;
+      } else if (completed || Object.keys(primary.actuals).length) {
+        throw new Error(`Не вказано заказ у раунді ${original.sequence}.`);
+      }
+      if (primary.resolution === "repaint") {
+        if (!hasOrder || !completed || Object.keys(primary.actuals).length) {
+          throw new Error(`Некоректний розпис у раунді ${original.sequence}.`);
+        }
+        round.phase = "physical-play";
+        resolveRepaint(rebuilt);
+      } else {
+        const inputIds = Object.keys(primary.actuals);
+        if (inputIds.some(function (id) { return !playerIds.includes(id); }) ||
+          (completed && inputIds.length !== playerIds.length)) {
+          throw new Error(`Некоректні результати раунду ${original.sequence}.`);
+        }
+        if (inputIds.length) round.phase = "results";
+        playerIds.forEach(function (playerId) {
+          if (!Object.prototype.hasOwnProperty.call(primary.actuals, playerId)) return;
+          const input = primary.actuals[playerId];
+          if (input.action === "bite") {
+            if (playerId !== round.orderingPlayerId) throw new Error("Байт доступний лише тому, хто заказує.");
+            resolvePlayerResult(rebuilt, playerId, null, "bite");
+          } else if (input.action === "actual" &&
+            input.actualPoints !== null && input.actualPoints !== "" &&
+            isValidActualPoints(rebuilt.playerCount, input.actualPoints)) {
+            resolvePlayerResult(rebuilt, playerId, input.actualPoints, null);
+          } else {
+            throw new Error(`Некоректне Взято у раунді ${original.sequence}.`);
+          }
+        });
+        if (completed && rebuilt.activeRound) throw new Error(`Раунд ${original.sequence} не завершений.`);
+        if (!completed && !rebuilt.activeRound) throw new Error("Поточний раунд не може бути завершеним.");
+        if (!completed && rebuilt.activeRound) {
+          if (!["ordering-player", "physical-play", "results"].includes(original.phase)) {
+            throw new Error("Некоректна фаза поточного раунду.");
+          }
+          if (inputIds.length && original.phase !== "results") {
+            throw new Error("Результати внесено поза фазою Взято.");
+          }
+          rebuilt.activeRound.phase = original.phase;
+          rebuilt.activeRound.primary = primary;
+        }
+      }
+    });
+    return rebuilt;
   }
 
   function getPresentationKey(result, settings) {
@@ -285,6 +430,29 @@
     const elements = {
       menuContinue: document.getElementById("mariageMenuContinueButton"),
       setupNames: document.getElementById("mariagePlayerNameFields"),
+      dealer: document.getElementById("mariageDealer"),
+      replay: document.getElementById("mariageReplayButton"),
+      replayDialog: document.getElementById("mariageReplayDialog"),
+      replayNo: document.getElementById("mariageReplayNoButton"),
+      replayYes: document.getElementById("mariageReplayYesButton"),
+      actionPanel: document.getElementById("mariageActionPanel"),
+      editButton: document.getElementById("mariageEditButton"),
+      editToolbar: document.getElementById("mariageEditToolbar"),
+      editError: document.getElementById("mariageEditError"),
+      editApply: document.getElementById("mariageEditApplyButton"),
+      editDiscard: document.getElementById("mariageEditDiscardButton"),
+      editConfirm: document.getElementById("mariageEditConfirmDialog"),
+      editConfirmTitle: document.getElementById("mariageEditConfirmTitle"),
+      editConfirmDescription: document.getElementById("mariageEditConfirmDescription"),
+      editConfirmNo: document.getElementById("mariageEditConfirmNo"),
+      editConfirmYes: document.getElementById("mariageEditConfirmYes"),
+      valueEditor: document.getElementById("mariageValueEditor"),
+      valueFields: document.getElementById("mariageValueFields"),
+      valueError: document.getElementById("mariageValueError"),
+      valueCancel: document.getElementById("mariageValueCancel"),
+      valueSave: document.getElementById("mariageValueSave"),
+      gameMenu: document.getElementById("mariageGameMenuButton"),
+      gameNew: document.getElementById("mariageGameNewButton"),
       roundLabel: document.getElementById("mariageRoundLabel"),
       orderingLabel: document.getElementById("mariageOrderingLabel"),
       orderLabel: document.getElementById("mariageOrderLabel"),
@@ -310,6 +478,13 @@
     let draftOrderingPlayerId = null;
     let orderDialogOpen = false;
     let selectedResultPlayerId = null;
+    let replayPreviousFocus = null;
+    let editDraft = null;
+    let editDirty = false;
+    let confirmAction = null;
+    let valueTarget = null;
+    let lastTouch = { key: null, at: 0 };
+    let lastTouchActivationAt = 0;
 
     function load() {
       const saved = storage.loadGameByType(GAME_TYPE);
@@ -317,7 +492,7 @@
     }
 
     function persist() {
-      if (state) storage.saveGameByType(GAME_TYPE, state);
+      if (state && !editDraft) storage.saveGameByType(GAME_TYPE, state);
     }
 
     function selectedValue(name) {
@@ -345,11 +520,13 @@
     }
 
     function showMenu() {
+      if (editDraft) return;
       elements.menuContinue.disabled = !load();
       navigate(screens.MARIAGE_MENU);
     }
 
     function requestNewGame() {
+      if (editDraft) return;
       const saved = load();
       if (saved && !window.confirm("Початок нової гри замінить поточну гру Мар'яж. Продовжити?")) {
         showMenu();
@@ -418,7 +595,211 @@
       elements.message.textContent = message || "";
     }
 
+    function closeEditConfirm() {
+      elements.editConfirm.classList.add("hidden");
+      elements.editConfirm.setAttribute("aria-hidden", "true");
+      confirmAction = null;
+    }
+
+    function showEditConfirm(title, description, noLabel, yesLabel, action) {
+      elements.editConfirmTitle.textContent = title;
+      elements.editConfirmDescription.textContent = description;
+      elements.editConfirmNo.textContent = noLabel;
+      elements.editConfirmYes.textContent = yesLabel;
+      confirmAction = action;
+      elements.editConfirm.classList.remove("hidden");
+      elements.editConfirm.setAttribute("aria-hidden", "false");
+      elements.editConfirmNo.focus();
+    }
+
+    function enterEditMode() {
+      if (editDraft || !isSupportedPlayerCount(state.playerCount)) return;
+      showEditConfirm("Редагувати таблицю?", "Перехід у режим редагування дозволить змінювати внесені дані.", "Ні", "Так", function () {
+        editDraft = JSON.parse(JSON.stringify(state));
+        editDraft.rounds.concat(editDraft.activeRound ? [editDraft.activeRound] : []).forEach(function (round) {
+          round.primary = getRoundPrimary(round);
+        });
+        editDirty = false;
+        elements.editError.textContent = "";
+        render();
+      });
+    }
+
+    function leaveEditMode() {
+      editDraft = null;
+      editDirty = false;
+      elements.editError.textContent = "";
+      render();
+    }
+
+    function discardEditMode() {
+      if (!editDraft) return;
+      if (!editDirty) {
+        leaveEditMode();
+        return;
+      }
+      showEditConfirm("Скасувати редагування?", "Усі незбережені зміни буде втрачено.", "Ні", "Так", leaveEditMode);
+    }
+
+    function requestApplyEdits() {
+      if (!editDraft) return;
+      showEditConfirm("Застосувати зміни?", "Після підтвердження результати та бали буде перераховано.", "Скасувати", "Застосувати", function () {
+        try {
+          const recalculated = recalculateMariageGame(editDraft);
+          storage.saveGameByType(GAME_TYPE, recalculated);
+          state = recalculated;
+          editDraft = null;
+          editDirty = false;
+          elements.editError.textContent = "";
+          render();
+        } catch (error) {
+          elements.editError.textContent = error.message;
+        }
+      });
+    }
+
+    function getDraftRound(sequence) {
+      return editDraft.rounds.concat(editDraft.activeRound ? [editDraft.activeRound] : [])
+        .find(function (round) { return round.sequence === sequence; });
+    }
+
+    function closeValueEditor() {
+      elements.valueEditor.classList.add("hidden");
+      elements.valueEditor.setAttribute("aria-hidden", "true");
+      valueTarget = null;
+    }
+
+    function addValueField(labelText, fieldName, kind, value, choices) {
+      const label = document.createElement("label");
+      const control = document.createElement(kind === "select" ? "select" : "input");
+      label.textContent = labelText;
+      control.name = fieldName;
+      if (kind === "select") {
+        choices.forEach(function (choice) {
+          const option = document.createElement("option");
+          option.value = choice.value;
+          option.textContent = choice.label;
+          control.appendChild(option);
+        });
+      } else {
+        control.type = "number";
+        control.inputMode = "decimal";
+      }
+      control.value = value === null || value === undefined ? "" : String(value);
+      label.appendChild(control);
+      elements.valueFields.appendChild(label);
+      return control;
+    }
+
+    function openValueEditor(target) {
+      valueTarget = target;
+      const round = getDraftRound(target.sequence);
+      elements.valueFields.replaceChildren();
+      elements.valueError.textContent = "";
+      if (target.field === "player") {
+        addValueField("Хто заказує", "player", "select", round.orderingPlayerId,
+          editDraft.players.map(function (player) { return { value: player.id, label: player.name }; }));
+      } else if (target.field === "order") {
+        addValueField("Сума заказу", "order", "number", round.orderPoints);
+      } else if (target.field === "actual") {
+        const input = round.primary.actuals[target.playerId];
+        if (target.playerId === round.orderingPlayerId) {
+          addValueField("Тип результату", "action", "select", input.action,
+            [{ value: "actual", label: "Фактично взято" }, { value: "bite", label: "Байт без Лижі" }]);
+        }
+        addValueField("Фактично взято", "actual", "number", input.actualPoints);
+      } else if (target.field === "resolution") {
+        const resolution = addValueField("Результат раунду", "resolution", "select", round.primary.resolution,
+          [{ value: "normal", label: "Взято" }, { value: "repaint", label: "Розпис" }]);
+        const actualFields = document.createElement("div");
+        actualFields.className = "mariage-value-fields";
+        elements.valueFields.appendChild(actualFields);
+        editDraft.players.forEach(function (player) {
+          const input = round.primary.actuals[player.id];
+          const label = document.createElement("label");
+          const control = document.createElement("input");
+          label.textContent = `Взято: ${player.name}`;
+          control.type = "number";
+          control.inputMode = "decimal";
+          control.name = `actual-${player.id}`;
+          control.value = input && input.action === "actual" ? String(input.actualPoints) : "";
+          label.appendChild(control);
+          actualFields.appendChild(label);
+        });
+        const toggleFields = function () { actualFields.classList.toggle("hidden", resolution.value !== "normal"); };
+        resolution.addEventListener("change", toggleFields);
+        toggleFields();
+      }
+      elements.valueEditor.classList.remove("hidden");
+      elements.valueEditor.setAttribute("aria-hidden", "false");
+      elements.valueFields.querySelector("input, select").focus();
+    }
+
+    function saveValueEdit() {
+      if (!editDraft || !valueTarget) return;
+      const round = getDraftRound(valueTarget.sequence);
+      const field = function (name) { return elements.valueFields.querySelector(`[name="${name}"]`); };
+      if (valueTarget.field === "player") {
+        round.orderingPlayerId = field("player").value;
+      } else if (valueTarget.field === "order") {
+        round.orderPoints = field("order").value === "" ? null : Number(field("order").value);
+      } else if (valueTarget.field === "actual") {
+        const action = field("action") ? field("action").value : "actual";
+        const raw = field("actual").value;
+        round.primary.actuals[valueTarget.playerId] = {
+          action,
+          actualPoints: action === "bite" ? null : raw === "" ? null : Number(raw)
+        };
+      } else if (valueTarget.field === "resolution") {
+        const resolution = field("resolution").value;
+        round.primary.resolution = resolution;
+        round.primary.actuals = {};
+        if (resolution === "normal") {
+          editDraft.players.forEach(function (player) {
+            const raw = field(`actual-${player.id}`).value;
+            round.primary.actuals[player.id] = { action: "actual", actualPoints: raw === "" ? null : Number(raw) };
+          });
+        }
+      }
+      editDirty = true;
+      closeValueEditor();
+      try {
+        editDraft = recalculateMariageGame(editDraft);
+        elements.editError.textContent = "";
+      } catch (error) {
+        elements.editError.textContent = error.message;
+      }
+      render();
+    }
+
+    function requestValueEdit(target) {
+      if (!editDraft) return;
+      showEditConfirm("Редагувати дані?", "Ви дійсно бажаєте змінити внесені дані?", "Ні", "Так", function () {
+        openValueEditor(target);
+      });
+    }
+
+    function bindDoubleActivation(button, target) {
+      const key = `${target.sequence}:${target.field}:${target.playerId || ""}`;
+      button.addEventListener("dblclick", function () {
+        if (Date.now() - lastTouchActivationAt < 500) return;
+        requestValueEdit(target);
+      });
+      button.addEventListener("pointerup", function (event) {
+        if (event.pointerType !== "touch") return;
+        const now = Date.now();
+        if (lastTouch.key === key && now - lastTouch.at < 400) {
+          lastTouch = { key: null, at: 0 };
+          lastTouchActivationAt = now;
+          requestValueEdit(target);
+        } else {
+          lastTouch = { key, at: now };
+        }
+      });
+    }
+
     function beginRound() {
+      if (editDraft) return;
       if (!state.activeRound) {
         state.activeRound = createRound(state);
         persist();
@@ -429,6 +810,7 @@
     }
 
     function selectOrderingPlayer(playerId) {
+      if (editDraft) return;
       draftOrderingPlayerId = playerId;
       render();
       elements.orderPoints.focus();
@@ -443,6 +825,7 @@
     }
 
     function confirmOrder() {
+      if (editDraft) return;
       if (elements.orderPoints.value.trim() === "") {
         setMessage("Введіть числову суму заказу.");
         return;
@@ -468,6 +851,7 @@
     }
 
     function beginResults() {
+      if (editDraft) return;
       state.activeRound.phase = "results";
       state.activeRound.resultPlayerIndex = null;
       state.activeRound.resolvedPlayerIds = getResolvedPlayerIds(state.activeRound);
@@ -477,6 +861,7 @@
     }
 
     function selectResultPlayer(playerId) {
+      if (editDraft) return;
       if (!state.activeRound.results[playerId]) {
         selectedResultPlayerId = playerId;
         setMessage("");
@@ -493,6 +878,7 @@
     }
 
     function enterActual() {
+      if (editDraft) return;
       try {
         const value = elements.actualPoints.value;
         if (value.trim() === "" || !isValidActualPoints(state.playerCount, value)) {
@@ -511,6 +897,7 @@
     }
 
     function enterQuick(action) {
+      if (editDraft) return;
       try {
         const actual = action === "bite-ski" || action === "ski" ? 0 : null;
         resolvePlayerResult(state, selectedResultPlayerId, actual, action);
@@ -524,9 +911,51 @@
     }
 
     function repaintRound() {
-      resolveRepaint(state);
-      persist();
-      render();
+      if (editDraft) return;
+      try {
+        resolveRepaint(state);
+        selectedResultPlayerId = null;
+        elements.actualPoints.value = "";
+        setMessage("");
+        persist();
+        render();
+      } catch (error) {
+        setMessage(error.message);
+      }
+    }
+
+    function closeReplayDialog() {
+      elements.replayDialog.classList.add("hidden");
+      elements.replayDialog.setAttribute("aria-hidden", "true");
+      if (replayPreviousFocus) replayPreviousFocus.focus();
+      replayPreviousFocus = null;
+    }
+
+    function openReplayDialog() {
+      if (editDraft) return;
+      replayPreviousFocus = document.activeElement;
+      elements.replayDialog.classList.remove("hidden");
+      elements.replayDialog.setAttribute("aria-hidden", "false");
+      elements.replayNo.focus();
+    }
+
+    function confirmReplay() {
+      if (editDraft) return;
+      try {
+        replayLatestRound(state);
+        draftOrderingPlayerId = null;
+        selectedResultPlayerId = null;
+        orderDialogOpen = false;
+        elements.orderPoints.value = "";
+        elements.actualPoints.value = "";
+        setMessage("");
+        persist();
+        closeReplayDialog();
+        render();
+      } catch (error) {
+        closeReplayDialog();
+        setMessage(error.message);
+      }
     }
 
     function renderOrderingButtons() {
@@ -573,19 +1002,58 @@
       }
     }
 
-    function renderTable() {
+    function renderEditInputRow(body, round, displayState) {
+      const row = document.createElement("tr");
+      const cell = document.createElement("td");
+      const values = document.createElement("div");
+      row.className = "mariage-edit-input-row";
+      cell.colSpan = displayState.players.length * 2;
+      values.className = "mariage-edit-values";
+      const addValue = function (label, field, playerId) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "mariage-edit-value";
+        button.textContent = label;
+        button.title = "Двічі натисніть, щоб змінити";
+        button.dataset.field = field;
+        button.dataset.round = String(round.sequence);
+        if (playerId) button.dataset.playerId = playerId;
+        bindDoubleActivation(button, { sequence: round.sequence, field, playerId });
+        values.appendChild(button);
+      };
+      const orderingPlayer = displayState.players.find(function (player) { return player.id === round.orderingPlayerId; });
+      if (orderingPlayer) {
+        addValue(`Заказує: ${orderingPlayer.name}`, "player");
+        addValue(`Заказ: ${round.orderPoints}`, "order");
+      }
+      if (displayState.rounds.includes(round)) {
+        addValue(`Результат: ${round.primary.resolution === "repaint" ? "Розпис" : "Взято"}`, "resolution");
+      }
+      if (round.primary.resolution === "normal") {
+        displayState.players.forEach(function (player) {
+          const input = round.primary.actuals[player.id];
+          if (!input) return;
+          addValue(`${player.name}: ${input.action === "bite" ? "Байт" : input.actualPoints}`, "actual", player.id);
+        });
+      }
+      cell.appendChild(values);
+      row.appendChild(cell);
+      body.appendChild(row);
+    }
+
+    function renderTable(displayState) {
       const head = document.createElement("thead");
       const headRow = document.createElement("tr");
       const body = document.createElement("tbody");
       const columns = document.createElement("colgroup");
-      state.players.forEach(function (player) {
+      displayState.players.forEach(function (player) {
         const resultColumn = document.createElement("col");
         const scoreColumn = document.createElement("col");
         const playerHeader = document.createElement("th");
         resultColumn.className = "mariage-status-column";
         scoreColumn.className = "mariage-score-column";
-        resultColumn.style.width = `${30 / state.players.length}%`;
-        scoreColumn.style.width = `${70 / state.players.length}%`;
+        resultColumn.style.width = `${30 / displayState.players.length}%`;
+        scoreColumn.style.width = `${70 / displayState.players.length}%`;
         columns.append(resultColumn, scoreColumn);
         playerHeader.textContent = player.name;
         playerHeader.className = "player-header mariage-player-header";
@@ -594,10 +1062,10 @@
       });
       head.appendChild(headRow);
 
-      const rounds = state.rounds.concat(state.activeRound ? [state.activeRound] : []);
+      const rounds = displayState.rounds.concat(displayState.activeRound ? [displayState.activeRound] : []);
       rounds.forEach(function (round) {
         const row = document.createElement("tr");
-        state.players.forEach(function (player) {
+        displayState.players.forEach(function (player) {
           const result = round.results[player.id];
           const resultCell = document.createElement("td");
           const scoreCell = document.createElement("td");
@@ -606,12 +1074,12 @@
           if (result) {
             appendResultContent(resultCell, result);
             scoreCell.textContent = String(result.cumulativeScore);
-            if (isCycleComplete(state, player.id, "ski", result.skiCycleId) ||
-              isCycleComplete(state, player.id, "repaint", result.repaintCycleId)) {
+            if (isCycleComplete(displayState, player.id, "ski", result.skiCycleId) ||
+              isCycleComplete(displayState, player.id, "repaint", result.repaintCycleId)) {
               resultCell.classList.add("completed-cycle");
             }
             if (result.semantic.repaintBeneficiary) resultCell.classList.add("neutral-result");
-          } else if (round === state.activeRound && round.orderingPlayerId === player.id && round.orderPoints !== null) {
+          } else if (round === displayState.activeRound && round.orderingPlayerId === player.id && round.orderPoints !== null) {
             resultCell.textContent = "--";
             scoreCell.textContent = String(round.orderPoints);
             scoreCell.classList.add("pending-order-score");
@@ -621,11 +1089,12 @@
           row.append(resultCell, scoreCell);
         });
         body.appendChild(row);
+        if (editDraft) renderEditInputRow(body, round, displayState);
       });
       if (rounds.length === 0) {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
-        cell.colSpan = state.players.length * 2;
+        cell.colSpan = displayState.players.length * 2;
         cell.className = "future-note";
         cell.textContent = "Почніть перший раунд";
         row.appendChild(cell);
@@ -635,7 +1104,22 @@
     }
 
     function render() {
-      const round = state.activeRound;
+      const viewState = editDraft || state;
+      const round = viewState.activeRound;
+      const editing = Boolean(editDraft);
+      elements.actionPanel.classList.toggle("hidden", editing);
+      elements.editToolbar.classList.toggle("hidden", !editing);
+      elements.editButton.classList.toggle("active", editing);
+      elements.editButton.classList.toggle("hidden", !isSupportedPlayerCount(state.playerCount));
+      elements.editButton.disabled = editing;
+      elements.gameMenu.disabled = editing;
+      elements.gameNew.disabled = editing;
+      const dealer = getDealer(viewState);
+      elements.dealer.textContent = dealer ? `Роздає: ${dealer.name}` : "";
+      const replayTarget = round || viewState.rounds[viewState.rounds.length - 1];
+      elements.replay.classList.toggle("hidden", editing || !isSupportedPlayerCount(state.playerCount) ||
+        !replayTarget || !replayTarget.startState ||
+        (round && !round.orderingPlayerId && round.orderPoints === null && !getResolvedPlayerIds(round).length));
       if (!isSupportedPlayerCount(state.playerCount)) {
         elements.roundLabel.textContent = "—";
         elements.orderingLabel.textContent = "—";
@@ -646,11 +1130,11 @@
         elements.playStep.classList.add("hidden");
         elements.resultStep.classList.add("hidden");
         setMessage("Це збереження має 2 гравців. Поточні правила Мар'яж підтримують лише 3 або 4 гравців.");
-        renderTable();
+        renderTable(editDraft || state);
         return;
       }
-      elements.roundLabel.textContent = round ? String(round.sequence) : state.rounds.length ? `Завершено ${state.rounds.length}` : "0";
-      const orderingPlayer = round && getPlayer(state, round.orderingPlayerId || draftOrderingPlayerId);
+      elements.roundLabel.textContent = round ? String(round.sequence) : viewState.rounds.length ? `Завершено ${viewState.rounds.length}` : "0";
+      const orderingPlayer = round && getPlayer(viewState, round.orderingPlayerId || draftOrderingPlayerId);
       elements.orderingLabel.textContent = orderingPlayer ? orderingPlayer.name : "—";
       elements.orderLabel.textContent = round && round.orderPoints !== null ? String(round.orderPoints) : "—";
       const canOpenOrder = !round || (round.phase === "ordering-player" && !orderDialogOpen);
@@ -660,6 +1144,7 @@
       elements.orderPointsStep.classList.toggle("hidden", !round || round.phase !== "ordering-player" || !orderDialogOpen || !draftOrderingPlayerId);
       elements.playStep.classList.toggle("hidden", !round || round.phase !== "physical-play");
       elements.resultStep.classList.toggle("hidden", !round || round.phase !== "results");
+      elements.resultStep.querySelector("#mariageResultRepaintButton").classList.toggle("hidden", !round || round.phase !== "results");
       if (round && round.phase === "ordering-player" && orderDialogOpen && !draftOrderingPlayerId) renderOrderingButtons();
       if (round && round.phase === "ordering-player" && draftOrderingPlayerId) {
         elements.orderPoints.min = "100";
@@ -683,7 +1168,7 @@
           elements.actualPoints.step = "any";
         }
       }
-      renderTable();
+      renderTable(viewState);
     }
 
     document.querySelectorAll("input[name='mariagePlayerCount']").forEach(function (radio) {
@@ -701,11 +1186,26 @@
     document.getElementById("mariageCancelOrderButton").addEventListener("click", cancelOrder);
     document.getElementById("mariageTakenButton").addEventListener("click", beginResults);
     document.getElementById("mariageRepaintButton").addEventListener("click", repaintRound);
+    document.getElementById("mariageResultRepaintButton").addEventListener("click", repaintRound);
+    elements.replay.addEventListener("click", openReplayDialog);
+    elements.replayNo.addEventListener("click", closeReplayDialog);
+    elements.replayYes.addEventListener("click", confirmReplay);
     document.getElementById("mariageConfirmActualButton").addEventListener("click", enterActual);
     document.getElementById("mariageBiteButton").addEventListener("click", function () { enterQuick("bite"); });
     document.getElementById("mariageBiteSkiButton").addEventListener("click", function () { enterQuick("bite-ski"); });
     document.getElementById("mariageSkiButton").addEventListener("click", function () { enterQuick("ski"); });
     document.getElementById("mariageResultBackButton").addEventListener("click", closeResultPlayer);
+    elements.editButton.addEventListener("click", enterEditMode);
+    elements.editDiscard.addEventListener("click", discardEditMode);
+    elements.editApply.addEventListener("click", requestApplyEdits);
+    elements.editConfirmNo.addEventListener("click", closeEditConfirm);
+    elements.editConfirmYes.addEventListener("click", function () {
+      const action = confirmAction;
+      closeEditConfirm();
+      if (action) action();
+    });
+    elements.valueCancel.addEventListener("click", closeValueEditor);
+    elements.valueSave.addEventListener("click", saveValueEdit);
     renderNameFields();
 
     return { showMenu, continueGame, requestNewGame };
@@ -722,6 +1222,8 @@
     createPlayerCycleState,
     createGame,
     createRound,
+    getDealer,
+    replayLatestRound,
     applySki,
     applyRepaint,
     getResolvedPlayerIds,
@@ -731,6 +1233,8 @@
     resolvePlayerResult,
     resolveActual,
     resolveRepaint,
+    getRoundPrimary,
+    recalculateMariageGame,
     getPresentation,
     isCycleComplete,
     initialize

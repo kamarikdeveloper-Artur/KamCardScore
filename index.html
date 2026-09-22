@@ -80,6 +80,7 @@
         <header class="game-header">
           <div><p class="eyebrow">Таблиця балів</p><h1>Мар'яж</h1></div>
           <div class="game-actions">
+            <button class="icon-button mariage-edit-button" id="mariageEditButton" type="button" aria-label="Редагувати таблицю" title="Редагувати таблицю"><img src="assets/icons/edit-table.svg" alt=""></button>
             <button class="secondary-button" id="mariageGameMenuButton" type="button">Меню</button>
             <button class="secondary-button btn-new-game" id="mariageGameNewButton" type="button">Нова гра</button>
           </div>
@@ -106,6 +107,7 @@
             <button class="secondary-button" id="mariageRepaintButton" type="button">Розпис</button>
           </div>
           <div class="hidden" id="mariageResultStep">
+            <button class="secondary-button mariage-result-repaint" id="mariageResultRepaintButton" type="button">Розпис</button>
             <div id="mariageUnresolvedStep">
               <span class="status-label">Запис балів</span>
               <div class="mariage-player-buttons" id="mariageUnresolvedPlayers"></div>
@@ -129,10 +131,56 @@
           </div>
           <p class="mariage-message" id="mariageMessage" role="alert"></p>
         </section>
+        <div class="mariage-edit-toolbar hidden" id="mariageEditToolbar">
+          <strong>Режим редагування</strong>
+          <div>
+            <button class="secondary-button" id="mariageEditDiscardButton" type="button">Скасувати редагування</button>
+            <button class="primary-button" id="mariageEditApplyButton" type="button">Завершити</button>
+          </div>
+          <p class="mariage-edit-error" id="mariageEditError" role="alert"></p>
+        </div>
+        <div class="mariage-table-toolbar">
+          <button class="secondary-button hidden" id="mariageReplayButton" type="button">Переграти раунд</button>
+          <span class="mariage-dealer" id="mariageDealer"></span>
+        </div>
         <div class="table-wrap" aria-label="Таблиця балів Мар'яж">
           <table class="score-table mariage-table" id="mariageScoreTable"></table>
         </div>
       </section>
+
+      <div class="mariage-replay-overlay hidden" id="mariageReplayDialog" aria-hidden="true">
+        <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageReplayTitle" aria-describedby="mariageReplayDescription">
+          <h2 id="mariageReplayTitle">Переграти раунд?</h2>
+          <p id="mariageReplayDescription">Усі дані поточного раунду буде скасовано.</p>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageReplayNoButton" type="button">Ні</button>
+            <button class="primary-button" id="mariageReplayYesButton" type="button">Так</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mariage-replay-overlay hidden" id="mariageEditConfirmDialog" aria-hidden="true">
+        <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageEditConfirmTitle" aria-describedby="mariageEditConfirmDescription">
+          <h2 id="mariageEditConfirmTitle"></h2>
+          <p id="mariageEditConfirmDescription"></p>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageEditConfirmNo" type="button"></button>
+            <button class="primary-button" id="mariageEditConfirmYes" type="button"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mariage-replay-overlay hidden" id="mariageValueEditor" aria-hidden="true">
+        <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageValueEditorTitle">
+          <h2 id="mariageValueEditorTitle">Редагувати дані</h2>
+          <div class="mariage-value-fields" id="mariageValueFields"></div>
+          <p class="mariage-edit-error" id="mariageValueError" role="alert"></p>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageValueCancel" type="button">Скасувати</button>
+            <button class="primary-button" id="mariageValueSave" type="button">Зберегти</button>
+          </div>
+        </div>
+      </div>
 
       <section class="setup-panel hidden" id="setupPanel">
         <div class="main-title">

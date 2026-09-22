@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v3`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -17,7 +17,8 @@ const APP_SHELL = [
   "./assets/suits/clubs.svg",
   "./assets/suits/diamonds.svg",
   "./assets/icons/icon-192.png",
-  "./assets/icons/icon-512.png"
+  "./assets/icons/icon-512.png",
+  "./assets/icons/edit-table.svg"
 ];
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
 const ROOT_URL = new URL("./", self.registration.scope).href;
