@@ -89,6 +89,7 @@
           <div><span class="status-label">Раунд</span><strong id="mariageRoundLabel">0</strong></div>
           <div><span class="status-label">Заказує</span><strong id="mariageOrderingLabel">—</strong></div>
           <div><span class="status-label">Заказ</span><strong id="mariageOrderLabel">—</strong></div>
+          <div class="hidden" id="mariageBarrelStatus"><span class="status-label">Бочка</span><strong id="mariageBarrelLabel"></strong></div>
         </section>
         <section class="mariage-action-panel" id="mariageActionPanel" aria-live="polite">
           <button class="primary-button" id="mariageNewRoundButton" type="button">Новий раунд</button>
@@ -115,11 +116,12 @@
             <div class="hidden" id="mariageSelectedResultStep">
               <span class="status-label" id="mariageSelectedPlayerRole">Результат гравця</span>
               <strong class="mariage-current-player" id="mariageCurrentPlayer"></strong>
-              <div class="mariage-entry-row">
+              <div class="mariage-entry-row" id="mariageNumericResultEntry">
                 <input id="mariageActualPoints" type="number" min="0" inputmode="decimal" aria-label="Фактично взято балів">
                 <button class="primary-button" id="mariageConfirmActualButton" type="button">Записати</button>
               </div>
               <div class="mariage-quick-actions hidden" id="mariageOrderingQuickActions">
+                <button class="primary-button" id="mariageOrderingTakenButton" type="button">Взято</button>
                 <button class="secondary-button" id="mariageBiteButton" type="button">Байт</button>
                 <button class="secondary-button" id="mariageBiteSkiButton" type="button">Байт + Лижа</button>
               </div>
@@ -127,6 +129,14 @@
                 <button class="secondary-button" id="mariageSkiButton" type="button">Лижа</button>
               </div>
               <button class="secondary-button mariage-back-to-list" id="mariageResultBackButton" type="button">До списку</button>
+            </div>
+          </div>
+          <div class="hidden" id="mariageFactualStep">
+            <span class="status-label" id="mariageFactualTitle">Фактично взято</span>
+            <p>Вкажіть фактично взяті бали. Значення визначає черговість входу на Бочку та не змінює нараховані бали за виконаний заказ.</p>
+            <div class="mariage-entry-row">
+              <input id="mariageFactualPoints" type="number" min="0" inputmode="decimal" aria-label="Фактично взято для черговості входу на Бочку">
+              <button class="primary-button" id="mariageConfirmFactualButton" type="button">Підтвердити</button>
             </div>
           </div>
           <p class="mariage-message" id="mariageMessage" role="alert"></p>

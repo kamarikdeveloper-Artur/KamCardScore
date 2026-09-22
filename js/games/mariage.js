@@ -5,6 +5,10 @@
   const MODES = Object.freeze(["three", "immediate"]);
   const SUPPORTED_PLAYER_COUNTS = Object.freeze([3, 4]);
   const MAXIMUM_POINTS_BY_PLAYER_COUNT = Object.freeze({ 3: 500, 4: 420 });
+  const BARREL_ENTRY_SCORE = 880;
+  const BARREL_EXIT_SCORE = 760;
+  const BARREL_MINIMUM_ORDER = 120;
+  const BARREL_MAX_ATTEMPTS = 3;
   const PRESENTATION = Object.freeze({
     success: Object.freeze({ fallback: "✅", asset: "assets/mariage/results/success.svg" }),
     bite: Object.freeze({ fallback: "Б", asset: "assets/mariage/results/bite.svg" }),
@@ -26,6 +30,13 @@
         ski: { count: 0, cycleId: 1 },
         repaint: { count: 0, cycleId: 1 }
       };
+      return map;
+    }, {});
+  }
+
+  function createBarrelState(players) {
+    return players.reduce(function (map, player) {
+      map[player.id] = { onBarrel: false, barrelAttempts: 0, failedBarrels: 0 };
       return map;
     }, {});
   }
@@ -52,12 +63,17 @@
       players,
       settings: { skiMode: options.skiMode, repaintMode: options.repaintMode },
       cycleState: createPlayerCycleState(players),
+      barrelState: createBarrelState(players),
       rounds: [],
-      activeRound: null
+      activeRound: null,
+      status: "active",
+      winnerPlayerId: null,
+      completedAt: null
     };
   }
 
   function createRound(state) {
+    if (state.status === "completed") throw new Error("Mariage game is completed");
     const sequence = state.rounds.length + 1;
     return {
       id: `round-${sequence}`,
@@ -70,13 +86,17 @@
       resultPlayerIndex: null,
       resolvedPlayerIds: [],
       results: {},
-      primary: { resolution: "normal", actuals: {} },
+      primary: { resolution: "normal", orderingResult: null, orderingActualPoints: null, actuals: {} },
       startState: {
         scores: state.players.reduce(function (scores, player) {
           scores[player.id] = player.score;
           return scores;
         }, {}),
-        cycleState: JSON.parse(JSON.stringify(state.cycleState))
+        cycleState: JSON.parse(JSON.stringify(state.cycleState)),
+        barrelState: JSON.parse(JSON.stringify(state.barrelState || createBarrelState(state.players))),
+        gameStatus: state.status || "active",
+        winnerPlayerId: state.winnerPlayerId || null,
+        completedAt: state.completedAt || null
       }
     };
   }
@@ -93,6 +113,10 @@
       player.score = round.startState.scores[player.id];
     });
     state.cycleState = JSON.parse(JSON.stringify(round.startState.cycleState));
+    state.barrelState = JSON.parse(JSON.stringify(round.startState.barrelState || createBarrelState(state.players)));
+    state.status = round.startState.gameStatus || "active";
+    state.winnerPlayerId = round.startState.winnerPlayerId || null;
+    state.completedAt = round.startState.completedAt || null;
   }
 
   function replayLatestRound(state) {
@@ -182,47 +206,78 @@
     return maximum !== null && Number.isFinite(value) && value >= 100 && value <= maximum && value % 5 === 0;
   }
 
+  function getBarrelHolder(state) {
+    return state.players.find(function (player) {
+      return state.barrelState && state.barrelState[player.id] && state.barrelState[player.id].onBarrel;
+    }) || null;
+  }
+
+  function getMinimumOrder(state, playerId) {
+    return state.barrelState && state.barrelState[playerId] && state.barrelState[playerId].onBarrel
+      ? BARREL_MINIMUM_ORDER : 100;
+  }
+
+  function isValidOrderForPlayer(state, playerId, orderPoints) {
+    return isValidOrderPoints(state.playerCount, orderPoints) && Number(orderPoints) >= getMinimumOrder(state, playerId);
+  }
+
   function isValidActualPoints(playerCount, actualPoints) {
     const value = Number(actualPoints);
     const maximum = getMaximumPoints(playerCount);
     return maximum !== null && Number.isFinite(value) && value >= 0 && value <= maximum;
   }
 
+  function setOrderingActualPoints(round, playerCount, points) {
+    if (!round || !round.primary || round.primary.resolution !== "normal") throw new Error("Factual points require a normal round");
+    if (points !== null && points !== undefined && points !== "") {
+      if (!Number.isInteger(Number(points)) || !isValidActualPoints(playerCount, points) ||
+        (round.primary.orderingResult === "taken" && Number(points) < round.orderPoints)) {
+        throw new Error("Invalid ordering-player factual points");
+      }
+      round.primary.orderingActualPoints = Number(points);
+    } else {
+      round.primary.orderingActualPoints = null;
+    }
+  }
+
+  function resolveRequiredOrderingActualPoints(state, points) {
+    const round = state.activeRound;
+    if (!round || round.phase !== "ordering-factual" || !round.factualRequiredPlayerId) {
+      throw new Error("Factual points are not required");
+    }
+    setOrderingActualPoints(round, state.playerCount, points);
+    return finishRound(state);
+  }
+
   function resolvePlayerResult(state, playerId, actualPoints, quickAction) {
+    if (state.status === "completed") throw new Error("Mariage game is completed");
     const round = state.activeRound;
     if (!round || round.phase !== "results") throw new Error("Mariage round is not accepting results");
     const player = getPlayer(state, playerId);
     if (!player) throw new Error("Unknown Mariage player");
     if (round.results[player.id]) throw new Error("Player result is already resolved");
     const isOrderingPlayer = player.id === round.orderingPlayerId;
-    if ((quickAction === "bite" || quickAction === "bite-ski") && !isOrderingPlayer) {
+    if (isOrderingPlayer && !["taken", "bite", "bite-ski"].includes(quickAction)) {
+      throw new Error("Choose the ordering-player result");
+    }
+    if (!isOrderingPlayer && quickAction && quickAction !== "ski") {
       throw new Error("Only the ordering player can receive Bite");
     }
-    if (quickAction === "ski" && isOrderingPlayer) {
-      throw new Error("The ordering player must receive Bite with Ski");
-    }
 
-    let actual = actualPoints;
-    let bite = quickAction === "bite" || quickAction === "bite-ski";
-    let ski = quickAction === "bite-ski" || quickAction === "ski";
-    let success = false;
-    let delta = 0;
+    let actual = null;
+    const success = isOrderingPlayer && quickAction === "taken";
+    const bite = isOrderingPlayer && !success;
+    let ski = isOrderingPlayer ? quickAction === "bite-ski" : quickAction === "ski";
+    let delta = isOrderingPlayer ? (success ? round.orderPoints : -round.orderPoints) : 0;
 
-    if (!quickAction || quickAction === "ski") {
-      if (quickAction === "ski") actual = 0;
-      if (String(actualPoints).trim() === "") throw new Error("Actual points must be non-negative");
-      actual = Number(actual);
-      if (!isValidActualPoints(state.playerCount, actual)) throw new Error("Actual points are outside the allowed range");
-      ski = actual === 0;
-      if (isOrderingPlayer) {
-        success = actual >= round.orderPoints;
-        bite = !success;
+    if (!isOrderingPlayer) {
+      if (quickAction === "ski") actualPoints = 0;
+      if (actualPoints === null || actualPoints === undefined || String(actualPoints).trim() === "" ||
+        !isValidActualPoints(state.playerCount, actualPoints)) {
+        throw new Error("Actual points are outside the allowed range");
       }
-    }
-
-    if (isOrderingPlayer) {
-      delta += success ? round.orderPoints : -round.orderPoints;
-    } else if (actual > 0) {
+      actual = Number(actualPoints);
+      ski = actual === 0;
       delta += actual;
     }
 
@@ -243,9 +298,11 @@
     });
     round.primary = round.primary || getRoundPrimary(round);
     round.primary.resolution = "normal";
-    round.primary.actuals[player.id] = quickAction === "bite"
-      ? { action: "bite", actualPoints: null }
-      : { action: "actual", actualPoints: actual };
+    if (isOrderingPlayer) {
+      round.primary.orderingResult = quickAction === "bite-ski" ? "bite_ski" : quickAction;
+    } else {
+      round.primary.actuals[player.id] = { action: "actual", actualPoints: actual };
+    }
     round.resolvedPlayerIds = getResolvedPlayerIds(round);
     if (getUnresolvedPlayers(state).length === 0) finishRound(state);
     return round.results[player.id];
@@ -261,6 +318,7 @@
   }
 
   function resolveRepaint(state) {
+    if (state.status === "completed") throw new Error("Mariage game is completed");
     const round = state.activeRound;
     if (!round || !["physical-play", "results"].includes(round.phase) || !round.orderingPlayerId) {
       throw new Error("Repaint is unavailable");
@@ -272,7 +330,7 @@
     }
     const repaintEvent = applyRepaint(state, round.orderingPlayerId);
     round.repaint = true;
-    round.primary = { resolution: "repaint", actuals: {} };
+    round.primary = { resolution: "repaint", orderingResult: null, orderingActualPoints: null, actuals: {} };
     state.players.forEach(function (player) {
       const isOrderingPlayer = player.id === round.orderingPlayerId;
       round.results[player.id] = buildResult(state, player.id, {
@@ -290,20 +348,143 @@
     return round;
   }
 
+  function getBarrelCandidates(state, round, excludedPlayerId) {
+    return state.players.filter(function (player) {
+      return player.id !== excludedPlayerId && player.score >= BARREL_ENTRY_SCORE;
+    }).map(function (player) {
+      const input = round.primary.actuals[player.id];
+      return {
+        playerId: player.id,
+        rawScore: player.score,
+        preRoundScore: round.startState.scores[player.id],
+        isOrderingPlayer: player.id === round.orderingPlayerId,
+        factualPoints: round.primary.resolution === "repaint" ? 0 : player.id === round.orderingPlayerId
+          ? round.primary.orderingActualPoints
+          : input && input.action === "actual" ? Number(input.actualPoints) : null
+      };
+    });
+  }
+
+  function setPostTransitionScore(state, round, playerId, score) {
+    getPlayer(state, playerId).score = score;
+    if (round.results[playerId]) round.results[playerId].cumulativeScore = score;
+  }
+
+  function selectBarrelCandidate(state, round, candidates) {
+    if (!candidates.length) return { selected: null, factualRequiredPlayerId: null };
+    if (candidates.length === 1) return { selected: candidates[0], factualRequiredPlayerId: null };
+    const orderingCandidate = candidates.find(function (candidate) { return candidate.isOrderingPlayer; });
+    if (orderingCandidate && (orderingCandidate.factualPoints === null || orderingCandidate.factualPoints === undefined)) {
+      return { selected: null, factualRequiredPlayerId: orderingCandidate.playerId };
+    }
+    const highestFactual = Math.max.apply(null, candidates.map(function (candidate) { return candidate.factualPoints; }));
+    let tied = candidates.filter(function (candidate) { return candidate.factualPoints === highestFactual; });
+    const highestPreRound = Math.max.apply(null, tied.map(function (candidate) { return candidate.preRoundScore; }));
+    tied = tied.filter(function (candidate) { return candidate.preRoundScore === highestPreRound; });
+    const tiedOrderingPlayer = tied.filter(function (candidate) { return candidate.isOrderingPlayer; });
+    if (tiedOrderingPlayer.length === 1) return { selected: tiedOrderingPlayer[0], factualRequiredPlayerId: null };
+    const orderingIndex = state.players.findIndex(function (player) { return player.id === round.orderingPlayerId; });
+    for (let offset = 1; offset <= state.players.length; offset += 1) {
+      const playerId = state.players[(orderingIndex + offset) % state.players.length].id;
+      const candidate = tied.find(function (item) { return item.playerId === playerId; });
+      if (candidate) return { selected: candidate, factualRequiredPlayerId: null };
+    }
+    throw new Error("Unable to select a Barrel candidate");
+  }
+
+  function registerBarrelExit(state, playerId, exitScore, reason, round) {
+    const barrel = state.barrelState[playerId];
+    const player = getPlayer(state, playerId);
+    barrel.onBarrel = false;
+    barrel.barrelAttempts = 0;
+    barrel.failedBarrels += 1;
+    setPostTransitionScore(state, round, playerId, exitScore);
+    if (barrel.failedBarrels === 3) {
+      barrel.failedBarrels = 0;
+      setPostTransitionScore(state, round, playerId, 0);
+    }
+    round.barrel.exits.push({ playerId, reason, score: player.score, failedBarrels: barrel.failedBarrels });
+  }
+
+  function processBarrelTransitions(state, round) {
+    state.barrelState = state.barrelState || createBarrelState(state.players);
+    round.barrel = { entrantPlayerId: null, exits: [], winnerPlayerId: null };
+    const holder = getBarrelHolder(state);
+    const holderResult = holder && round.results[holder.id];
+    const holderIsOrdering = holder && holder.id === round.orderingPlayerId;
+
+    if (holderIsOrdering && holderResult && round.primary.resolution === "normal" &&
+      round.primary.orderingResult === "taken") {
+      state.status = "completed";
+      state.winnerPlayerId = holder.id;
+      state.completedAt = round.completedAt || new Date().toISOString();
+      round.barrel.winnerPlayerId = holder.id;
+      return { completed: true, factualRequiredPlayerId: null };
+    }
+
+    const candidates = getBarrelCandidates(state, round, holder && holder.id);
+    const selection = selectBarrelCandidate(state, round, candidates);
+    if (selection.factualRequiredPlayerId) return { completed: false, factualRequiredPlayerId: selection.factualRequiredPlayerId };
+
+    let holderExited = false;
+    if (holderIsOrdering && holderResult && round.primary.resolution === "normal" &&
+      ["bite", "bite_ski"].includes(round.primary.orderingResult)) {
+      registerBarrelExit(state, holder.id, holder.score, "failed-order", round);
+      holderExited = true;
+    } else if (holder) {
+      state.barrelState[holder.id].barrelAttempts += 1;
+    }
+
+    if (selection.selected) {
+      if (holder && !holderExited) {
+        registerBarrelExit(state, holder.id, BARREL_EXIT_SCORE, "displacement", round);
+        holderExited = true;
+      }
+      const entrant = getPlayer(state, selection.selected.playerId);
+      setPostTransitionScore(state, round, entrant.id, BARREL_ENTRY_SCORE);
+      state.barrelState[entrant.id].onBarrel = true;
+      state.barrelState[entrant.id].barrelAttempts = 0;
+      round.barrel.entrantPlayerId = entrant.id;
+    } else if (holder && !holderExited) {
+      if (state.barrelState[holder.id].barrelAttempts >= BARREL_MAX_ATTEMPTS) {
+        registerBarrelExit(state, holder.id, BARREL_EXIT_SCORE, "attempt-exhaustion", round);
+      } else {
+        setPostTransitionScore(state, round, holder.id, BARREL_ENTRY_SCORE);
+      }
+    }
+    return { completed: true, factualRequiredPlayerId: null };
+  }
+
   function finishRound(state) {
     const round = state.activeRound;
+    const transition = processBarrelTransitions(state, round);
+    if (transition.factualRequiredPlayerId) {
+      round.phase = "ordering-factual";
+      round.factualRequiredPlayerId = transition.factualRequiredPlayerId;
+      return false;
+    }
+    round.factualRequiredPlayerId = null;
+    round.completedAt = round.completedAt || new Date().toISOString();
+    if (state.status === "completed") state.completedAt = round.completedAt;
     round.status = "resolved";
     round.phase = "resolved";
     round.resultPlayerIndex = null;
     state.rounds.push(round);
     state.activeRound = null;
+    return true;
   }
 
   function getRoundPrimary(round) {
-    if (round.primary) return JSON.parse(JSON.stringify(round.primary));
-    const primary = { resolution: round.repaint ? "repaint" : "normal", actuals: {} };
-    if (primary.resolution === "repaint") return primary;
-    Object.keys(round.results || {}).forEach(function (playerId) {
+    const primary = round.primary ? JSON.parse(JSON.stringify(round.primary)) :
+      { resolution: round.repaint ? "repaint" : "normal", actuals: {} };
+    primary.actuals = primary.actuals || {};
+    if (primary.resolution === "repaint") {
+      primary.actuals = {};
+      primary.orderingResult = null;
+      primary.orderingActualPoints = null;
+      return primary;
+    }
+    if (!round.primary) Object.keys(round.results || {}).forEach(function (playerId) {
       const result = round.results[playerId];
       if (result.actualPoints === null && result.semantic && result.semantic.bite && !result.semantic.ski) {
         primary.actuals[playerId] = { action: "bite", actualPoints: null };
@@ -311,6 +492,20 @@
         primary.actuals[playerId] = { action: "actual", actualPoints: result.actualPoints };
       }
     });
+    if (!Object.prototype.hasOwnProperty.call(primary, "orderingResult")) {
+      const oldInput = primary.actuals[round.orderingPlayerId];
+      if (oldInput) {
+        primary.orderingResult = oldInput.action === "bite" ? "bite" :
+          Number(oldInput.actualPoints) >= round.orderPoints ? "taken" :
+            Number(oldInput.actualPoints) === 0 ? "bite_ski" : "bite";
+        primary.orderingActualPoints = oldInput.action === "actual" ? oldInput.actualPoints : null;
+        delete primary.actuals[round.orderingPlayerId];
+      } else {
+        primary.orderingResult = null;
+      }
+    }
+    if (!Object.prototype.hasOwnProperty.call(primary, "orderingActualPoints")) primary.orderingActualPoints = null;
+    delete primary.actuals[round.orderingPlayerId];
     return primary;
   }
 
@@ -325,11 +520,16 @@
     const rebuilt = JSON.parse(JSON.stringify(source));
     rebuilt.players.forEach(function (player) { player.score = 0; });
     rebuilt.cycleState = createPlayerCycleState(rebuilt.players);
+    rebuilt.barrelState = createBarrelState(rebuilt.players);
     rebuilt.rounds = [];
     rebuilt.activeRound = null;
+    rebuilt.status = "active";
+    rebuilt.winnerPlayerId = null;
+    rebuilt.completedAt = null;
     const rounds = source.rounds.concat(source.activeRound ? [source.activeRound] : []);
 
     rounds.forEach(function (original, index) {
+      if (rebuilt.status === "completed") throw new Error("Гра вже завершена, але містить наступні раунди.");
       const completed = index < source.rounds.length;
       if (original.sequence !== index + 1 || typeof original.id !== "string") {
         throw new Error("Порушено порядок раундів.");
@@ -341,38 +541,51 @@
       }
       const round = createRound(rebuilt);
       round.id = original.id;
+      round.completedAt = original.completedAt || null;
       rebuilt.activeRound = round;
       const hasOrder = original.orderingPlayerId !== null || original.orderPoints !== null;
       if (hasOrder) {
         if (!playerIds.includes(original.orderingPlayerId) ||
-          !isValidOrderPoints(rebuilt.playerCount, original.orderPoints)) {
+          !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints)) {
           throw new Error(`Некоректний заказ у раунді ${original.sequence}.`);
         }
         round.orderingPlayerId = original.orderingPlayerId;
         round.orderPoints = original.orderPoints;
-      } else if (completed || Object.keys(primary.actuals).length) {
+      } else if (completed || Object.keys(primary.actuals).length || primary.orderingResult !== null || primary.orderingActualPoints !== null) {
         throw new Error(`Не вказано заказ у раунді ${original.sequence}.`);
       }
+      round.primary = JSON.parse(JSON.stringify(primary));
       if (primary.resolution === "repaint") {
-        if (!hasOrder || !completed || Object.keys(primary.actuals).length) {
+        if (!hasOrder || !completed) {
           throw new Error(`Некоректний розпис у раунді ${original.sequence}.`);
         }
         round.phase = "physical-play";
         resolveRepaint(rebuilt);
       } else {
         const inputIds = Object.keys(primary.actuals);
-        if (inputIds.some(function (id) { return !playerIds.includes(id); }) ||
-          (completed && inputIds.length !== playerIds.length)) {
+        const validOrderingResult = [null, "taken", "bite", "bite_ski"].includes(primary.orderingResult);
+        if (!validOrderingResult || inputIds.some(function (id) { return !playerIds.includes(id) || id === round.orderingPlayerId; }) ||
+          (completed && (inputIds.length !== playerIds.length - 1 || primary.orderingResult === null))) {
           throw new Error(`Некоректні результати раунду ${original.sequence}.`);
         }
-        if (inputIds.length) round.phase = "results";
+        if (primary.orderingActualPoints !== null && primary.orderingActualPoints !== undefined &&
+          (primary.orderingActualPoints === "" || !Number.isInteger(Number(primary.orderingActualPoints)) ||
+            !isValidActualPoints(rebuilt.playerCount, primary.orderingActualPoints) ||
+            (primary.orderingResult === "taken" && Number(primary.orderingActualPoints) < round.orderPoints))) {
+          throw new Error(`Некоректні фактичні бали раунду ${original.sequence}.`);
+        }
+        if (inputIds.length || primary.orderingResult !== null) round.phase = "results";
         playerIds.forEach(function (playerId) {
+          if (playerId === round.orderingPlayerId) {
+            if (primary.orderingResult !== null) {
+              resolvePlayerResult(rebuilt, playerId, null,
+                primary.orderingResult === "bite_ski" ? "bite-ski" : primary.orderingResult);
+            }
+            return;
+          }
           if (!Object.prototype.hasOwnProperty.call(primary.actuals, playerId)) return;
           const input = primary.actuals[playerId];
-          if (input.action === "bite") {
-            if (playerId !== round.orderingPlayerId) throw new Error("Байт доступний лише тому, хто заказує.");
-            resolvePlayerResult(rebuilt, playerId, null, "bite");
-          } else if (input.action === "actual" &&
+          if (input.action === "actual" &&
             input.actualPoints !== null && input.actualPoints !== "" &&
             isValidActualPoints(rebuilt.playerCount, input.actualPoints)) {
             resolvePlayerResult(rebuilt, playerId, input.actualPoints, null);
@@ -381,18 +594,23 @@
           }
         });
         if (completed && rebuilt.activeRound) throw new Error(`Раунд ${original.sequence} не завершений.`);
-        if (!completed && !rebuilt.activeRound) throw new Error("Поточний раунд не може бути завершеним.");
+        if (!completed && !rebuilt.activeRound) {
+          throw new Error("Поточний раунд не може бути завершеним.");
+        }
         if (!completed && rebuilt.activeRound) {
-          if (!["ordering-player", "physical-play", "results"].includes(original.phase)) {
+          if (!["ordering-player", "physical-play", "results", "ordering-factual"].includes(original.phase)) {
             throw new Error("Некоректна фаза поточного раунду.");
           }
-          if (inputIds.length && original.phase !== "results") {
+          if ((inputIds.length || primary.orderingResult !== null) &&
+            !["results", "ordering-factual"].includes(original.phase)) {
             throw new Error("Результати внесено поза фазою Взято.");
           }
           rebuilt.activeRound.phase = original.phase;
           rebuilt.activeRound.primary = primary;
         }
       }
+      const rebuiltRound = rebuilt.activeRound || rebuilt.rounds[rebuilt.rounds.length - 1];
+      rebuiltRound.primary = primary;
     });
     return rebuilt;
   }
@@ -456,6 +674,8 @@
       roundLabel: document.getElementById("mariageRoundLabel"),
       orderingLabel: document.getElementById("mariageOrderingLabel"),
       orderLabel: document.getElementById("mariageOrderLabel"),
+      barrelStatus: document.getElementById("mariageBarrelStatus"),
+      barrelLabel: document.getElementById("mariageBarrelLabel"),
       newRound: document.getElementById("mariageNewRoundButton"),
       orderPlayerStep: document.getElementById("mariageOrderPlayerStep"),
       orderingPlayers: document.getElementById("mariageOrderingPlayers"),
@@ -463,12 +683,16 @@
       orderPoints: document.getElementById("mariageOrderPoints"),
       playStep: document.getElementById("mariagePlayStep"),
       resultStep: document.getElementById("mariageResultStep"),
+      factualStep: document.getElementById("mariageFactualStep"),
+      factualTitle: document.getElementById("mariageFactualTitle"),
+      factualPoints: document.getElementById("mariageFactualPoints"),
       unresolvedStep: document.getElementById("mariageUnresolvedStep"),
       unresolvedPlayers: document.getElementById("mariageUnresolvedPlayers"),
       selectedResultStep: document.getElementById("mariageSelectedResultStep"),
       selectedPlayerRole: document.getElementById("mariageSelectedPlayerRole"),
       currentPlayer: document.getElementById("mariageCurrentPlayer"),
       actualPoints: document.getElementById("mariageActualPoints"),
+      numericResultEntry: document.getElementById("mariageNumericResultEntry"),
       orderingQuickActions: document.getElementById("mariageOrderingQuickActions"),
       nonOrderingQuickActions: document.getElementById("mariageNonOrderingQuickActions"),
       message: document.getElementById("mariageMessage"),
@@ -559,6 +783,8 @@
           showGame();
           return;
         }
+        state = recalculateMariageGame(state);
+        persist();
         const round = state.activeRound;
         let migrated = false;
         if (round) {
@@ -703,11 +929,14 @@
         addValueField("Сума заказу", "order", "number", round.orderPoints);
       } else if (target.field === "actual") {
         const input = round.primary.actuals[target.playerId];
-        if (target.playerId === round.orderingPlayerId) {
-          addValueField("Тип результату", "action", "select", input.action,
-            [{ value: "actual", label: "Фактично взято" }, { value: "bite", label: "Байт без Лижі" }]);
-        }
         addValueField("Фактично взято", "actual", "number", input.actualPoints);
+      } else if (target.field === "orderingResult") {
+        addValueField("Результат того, хто заказує", "orderingResult", "select", round.primary.orderingResult,
+          [{ value: "taken", label: "Взято" }, { value: "bite", label: "Байт" },
+            { value: "bite_ski", label: "Байт + Лижа" }]);
+      } else if (target.field === "orderingActualPoints") {
+        addValueField("Фактично взято (не впливає на рахунок)", "orderingActualPoints", "number",
+          round.primary.orderingActualPoints);
       } else if (target.field === "resolution") {
         const resolution = addValueField("Результат раунду", "resolution", "select", round.primary.resolution,
           [{ value: "normal", label: "Взято" }, { value: "repaint", label: "Розпис" }]);
@@ -715,6 +944,14 @@
         actualFields.className = "mariage-value-fields";
         elements.valueFields.appendChild(actualFields);
         editDraft.players.forEach(function (player) {
+          if (player.id === round.orderingPlayerId) {
+            const result = addValueField(`Результат: ${player.name}`, "orderingResult", "select",
+              round.primary.orderingResult || "taken",
+              [{ value: "taken", label: "Взято" }, { value: "bite", label: "Байт" },
+                { value: "bite_ski", label: "Байт + Лижа" }]);
+            actualFields.appendChild(result.parentElement);
+            return;
+          }
           const input = round.primary.actuals[player.id];
           const label = document.createElement("label");
           const control = document.createElement("input");
@@ -744,18 +981,25 @@
       } else if (valueTarget.field === "order") {
         round.orderPoints = field("order").value === "" ? null : Number(field("order").value);
       } else if (valueTarget.field === "actual") {
-        const action = field("action") ? field("action").value : "actual";
         const raw = field("actual").value;
         round.primary.actuals[valueTarget.playerId] = {
-          action,
-          actualPoints: action === "bite" ? null : raw === "" ? null : Number(raw)
+          action: "actual",
+          actualPoints: raw === "" ? null : Number(raw)
         };
+      } else if (valueTarget.field === "orderingResult") {
+        round.primary.orderingResult = field("orderingResult").value;
+      } else if (valueTarget.field === "orderingActualPoints") {
+        const raw = field("orderingActualPoints").value;
+        round.primary.orderingActualPoints = raw === "" ? null : Number(raw);
       } else if (valueTarget.field === "resolution") {
         const resolution = field("resolution").value;
         round.primary.resolution = resolution;
         round.primary.actuals = {};
+        round.primary.orderingResult = resolution === "normal" ? field("orderingResult").value : null;
+        round.primary.orderingActualPoints = null;
         if (resolution === "normal") {
           editDraft.players.forEach(function (player) {
+            if (player.id === round.orderingPlayerId) return;
             const raw = field(`actual-${player.id}`).value;
             round.primary.actuals[player.id] = { action: "actual", actualPoints: raw === "" ? null : Number(raw) };
           });
@@ -799,7 +1043,7 @@
     }
 
     function beginRound() {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       if (!state.activeRound) {
         state.activeRound = createRound(state);
         persist();
@@ -810,7 +1054,7 @@
     }
 
     function selectOrderingPlayer(playerId) {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       draftOrderingPlayerId = playerId;
       render();
       elements.orderPoints.focus();
@@ -825,14 +1069,15 @@
     }
 
     function confirmOrder() {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       if (elements.orderPoints.value.trim() === "") {
         setMessage("Введіть числову суму заказу.");
         return;
       }
       const orderPoints = Number(elements.orderPoints.value);
-      if (!isValidOrderPoints(state.playerCount, orderPoints)) {
-        setMessage(`Для ${state.playerCount} гравців заказ має бути від 100 до ${getMaximumPoints(state.playerCount)} і кратним 5.`);
+      const minimumOrder = getMinimumOrder(state, draftOrderingPlayerId);
+      if (!isValidOrderForPlayer(state, draftOrderingPlayerId, orderPoints)) {
+        setMessage(`Для цього гравця заказ має бути від ${minimumOrder} до ${getMaximumPoints(state.playerCount)} і кратним 5.`);
         return;
       }
       if (!draftOrderingPlayerId) {
@@ -851,7 +1096,7 @@
     }
 
     function beginResults() {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       state.activeRound.phase = "results";
       state.activeRound.resultPlayerIndex = null;
       state.activeRound.resolvedPlayerIds = getResolvedPlayerIds(state.activeRound);
@@ -861,12 +1106,12 @@
     }
 
     function selectResultPlayer(playerId) {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       if (!state.activeRound.results[playerId]) {
         selectedResultPlayerId = playerId;
         setMessage("");
         render();
-        elements.actualPoints.focus();
+        if (playerId !== state.activeRound.orderingPlayerId) elements.actualPoints.focus();
       }
     }
 
@@ -878,7 +1123,7 @@
     }
 
     function enterActual() {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       try {
         const value = elements.actualPoints.value;
         if (value.trim() === "" || !isValidActualPoints(state.playerCount, value)) {
@@ -897,7 +1142,7 @@
     }
 
     function enterQuick(action) {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       try {
         const actual = action === "bite-ski" || action === "ski" ? 0 : null;
         resolvePlayerResult(state, selectedResultPlayerId, actual, action);
@@ -911,11 +1156,29 @@
     }
 
     function repaintRound() {
-      if (editDraft) return;
+      if (editDraft || state.status === "completed") return;
       try {
         resolveRepaint(state);
         selectedResultPlayerId = null;
         elements.actualPoints.value = "";
+        setMessage("");
+        persist();
+        render();
+      } catch (error) {
+        setMessage(error.message);
+      }
+    }
+
+    function enterRequiredFactualPoints() {
+      if (editDraft || state.status === "completed") return;
+      try {
+        const value = elements.factualPoints.value;
+        if (value.trim() === "" || !Number.isInteger(Number(value))) {
+          setMessage("Вкажіть ціле значення фактично взятих балів.");
+          return;
+        }
+        resolveRequiredOrderingActualPoints(state, value);
+        elements.factualPoints.value = "";
         setMessage("");
         persist();
         render();
@@ -1030,7 +1293,15 @@
         addValue(`Результат: ${round.primary.resolution === "repaint" ? "Розпис" : "Взято"}`, "resolution");
       }
       if (round.primary.resolution === "normal") {
+        if (round.primary.orderingResult) {
+          const labels = { taken: "Взято", bite: "Байт", bite_ski: "Байт + Лижа" };
+          addValue(`${orderingPlayer.name}: ${labels[round.primary.orderingResult]}`, "orderingResult", orderingPlayer.id);
+          if (round.primary.orderingActualPoints !== null && round.primary.orderingActualPoints !== undefined) {
+            addValue(`Фактично: ${round.primary.orderingActualPoints}`, "orderingActualPoints", orderingPlayer.id);
+          }
+        }
         displayState.players.forEach(function (player) {
+          if (player.id === round.orderingPlayerId) return;
           const input = round.primary.actuals[player.id];
           if (!input) return;
           addValue(`${player.name}: ${input.action === "bite" ? "Байт" : input.actualPoints}`, "actual", player.id);
@@ -1116,6 +1387,13 @@
       elements.gameNew.disabled = editing;
       const dealer = getDealer(viewState);
       elements.dealer.textContent = dealer ? `Роздає: ${dealer.name}` : "";
+      const barrelHolder = getBarrelHolder(viewState);
+      elements.barrelStatus.classList.toggle("hidden", !barrelHolder);
+      if (barrelHolder) {
+        const attempts = viewState.barrelState[barrelHolder.id].barrelAttempts;
+        const displayedAttempt = round ? Math.min(attempts + 1, BARREL_MAX_ATTEMPTS) : Math.max(1, attempts);
+        elements.barrelLabel.textContent = `${barrelHolder.name}, спроба ${displayedAttempt}/3`;
+      }
       const replayTarget = round || viewState.rounds[viewState.rounds.length - 1];
       elements.replay.classList.toggle("hidden", editing || !isSupportedPlayerCount(state.playerCount) ||
         !replayTarget || !replayTarget.startState ||
@@ -1137,19 +1415,29 @@
       const orderingPlayer = round && getPlayer(viewState, round.orderingPlayerId || draftOrderingPlayerId);
       elements.orderingLabel.textContent = orderingPlayer ? orderingPlayer.name : "—";
       elements.orderLabel.textContent = round && round.orderPoints !== null ? String(round.orderPoints) : "—";
-      const canOpenOrder = !round || (round.phase === "ordering-player" && !orderDialogOpen);
+      const canOpenOrder = viewState.status !== "completed" && (!round || (round.phase === "ordering-player" && !orderDialogOpen));
       elements.newRound.classList.toggle("hidden", !canOpenOrder);
       elements.newRound.textContent = round ? "Заказ" : "Новий раунд";
       elements.orderPlayerStep.classList.toggle("hidden", !round || round.phase !== "ordering-player" || !orderDialogOpen || Boolean(draftOrderingPlayerId));
       elements.orderPointsStep.classList.toggle("hidden", !round || round.phase !== "ordering-player" || !orderDialogOpen || !draftOrderingPlayerId);
       elements.playStep.classList.toggle("hidden", !round || round.phase !== "physical-play");
       elements.resultStep.classList.toggle("hidden", !round || round.phase !== "results");
+      elements.factualStep.classList.toggle("hidden", !round || round.phase !== "ordering-factual");
       elements.resultStep.querySelector("#mariageResultRepaintButton").classList.toggle("hidden", !round || round.phase !== "results");
       if (round && round.phase === "ordering-player" && orderDialogOpen && !draftOrderingPlayerId) renderOrderingButtons();
       if (round && round.phase === "ordering-player" && draftOrderingPlayerId) {
-        elements.orderPoints.min = "100";
+        elements.orderPoints.min = String(getMinimumOrder(state, draftOrderingPlayerId));
         elements.orderPoints.max = String(getMaximumPoints(state.playerCount));
         elements.orderPoints.step = "5";
+      }
+      if (round && round.phase === "ordering-factual") {
+        const factualPlayer = getPlayer(viewState, round.factualRequiredPlayerId);
+        elements.factualTitle.textContent = `Фактично взято: ${factualPlayer ? factualPlayer.name : ""}`;
+        elements.factualPoints.max = String(getMaximumPoints(viewState.playerCount));
+      }
+      if (viewState.status === "completed") {
+        const winner = getPlayer(viewState, viewState.winnerPlayerId);
+        setMessage(winner ? `Переможець: ${winner.name}` : "Гру завершено.");
       }
       if (round && round.phase === "results") {
         if (selectedResultPlayerId && round.results[selectedResultPlayerId]) selectedResultPlayerId = null;
@@ -1161,6 +1449,7 @@
           const isOrderingPlayer = player.id === round.orderingPlayerId;
           elements.currentPlayer.textContent = player.name;
           elements.selectedPlayerRole.textContent = isOrderingPlayer ? "Гравець, який заказує" : "Результат гравця";
+          elements.numericResultEntry.classList.toggle("hidden", isOrderingPlayer);
           elements.orderingQuickActions.classList.toggle("hidden", !isOrderingPlayer);
           elements.nonOrderingQuickActions.classList.toggle("hidden", isOrderingPlayer);
           elements.actualPoints.min = "0";
@@ -1191,6 +1480,8 @@
     elements.replayNo.addEventListener("click", closeReplayDialog);
     elements.replayYes.addEventListener("click", confirmReplay);
     document.getElementById("mariageConfirmActualButton").addEventListener("click", enterActual);
+    document.getElementById("mariageConfirmFactualButton").addEventListener("click", enterRequiredFactualPoints);
+    document.getElementById("mariageOrderingTakenButton").addEventListener("click", function () { enterQuick("taken"); });
     document.getElementById("mariageBiteButton").addEventListener("click", function () { enterQuick("bite"); });
     document.getElementById("mariageBiteSkiButton").addEventListener("click", function () { enterQuick("bite-ski"); });
     document.getElementById("mariageSkiButton").addEventListener("click", function () { enterQuick("ski"); });
@@ -1216,10 +1507,15 @@
     MODES,
     SUPPORTED_PLAYER_COUNTS,
     MAXIMUM_POINTS_BY_PLAYER_COUNT,
+    BARREL_ENTRY_SCORE,
+    BARREL_EXIT_SCORE,
+    BARREL_MINIMUM_ORDER,
+    BARREL_MAX_ATTEMPTS,
     PRESENTATION,
     isSupportedPlayerCount,
     getMaximumPoints,
     createPlayerCycleState,
+    createBarrelState,
     createGame,
     createRound,
     getDealer,
@@ -1229,10 +1525,18 @@
     getResolvedPlayerIds,
     getUnresolvedPlayers,
     isValidOrderPoints,
+    isValidOrderForPlayer,
     isValidActualPoints,
+    setOrderingActualPoints,
+    resolveRequiredOrderingActualPoints,
     resolvePlayerResult,
     resolveActual,
     resolveRepaint,
+    getBarrelHolder,
+    getMinimumOrder,
+    getBarrelCandidates,
+    selectBarrelCandidate,
+    processBarrelTransitions,
     getRoundPrimary,
     recalculateMariageGame,
     getPresentation,
