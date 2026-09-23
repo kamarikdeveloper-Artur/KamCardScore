@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v5`;
+const CACHE_NAME = `${CACHE_PREFIX}v7`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "./css/style.css",
   "./js/storage.js",
   "./js/games/poker.js",
+  "./js/games/mariage-config.js",
   "./js/games/mariage.js",
   "./js/app.js",
   "./assets/backgrounds/bg_games.png",
@@ -18,6 +19,7 @@ const APP_SHELL = [
   "./assets/suits/diamonds.svg",
   "./assets/icons/icon-192.png",
   "./assets/icons/icon-512.png",
+  "./assets/icons/icon_barrel.svg",
   "./assets/icons/edit-table.svg"
 ];
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
