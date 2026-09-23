@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Нотатник балів</title>
+    <meta name="description" content="Нотатник балів - для карткових ігор">
+    <meta name="theme-color" content="#176b87">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+    <link rel="stylesheet" href="css/style.css">
+    <script defer src="js/storage.js"></script>
+    <script defer src="js/games/poker.js"></script>
+    <script defer src="js/games/mariage-config.js"></script>
+    <script defer src="js/games/mariage.js"></script>
+    <script defer src="js/app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="shell-panel" id="gameHubPanel">
+        <header class="shell-heading">
+          <p class="eyebrow">Картковий блокнот</p>
+          <h1>Нотатник балів</h1>
+        </header>
+        <div class="game-registry" id="gameRegistry" aria-label="Ігри"></div>
+      </section>
+
+      <section class="shell-panel hidden" id="pokerMenuPanel">
+        <header class="shell-heading">
+          <p class="eyebrow">Нотатник</p>
+          <h1>Покер</h1>
+        </header>
+        <div class="menu-actions">
+          <button class="primary-button" id="menuNewGameButton" type="button">Нова гра</button>
+          <button class="secondary-button" id="menuContinueButton" type="button">Продовжити</button>
+          <button class="secondary-button" type="button" disabled>Історія <span>Незабаром</span></button>
+          <button class="secondary-button" type="button" disabled>Статистика <span>Незабаром</span></button>
+          <button class="secondary-button" id="menuBackButton" type="button">Назад</button>
+        </div>
+      </section>
+
+      <section class="shell-panel hidden" id="mariageMenuPanel">
+        <header class="shell-heading">
+          <p class="eyebrow">Нотатник</p>
+          <h1>Мар'яж</h1>
+        </header>
+        <div class="menu-actions">
+          <button class="primary-button" id="mariageMenuNewButton" type="button">Нова гра</button>
+          <button class="secondary-button" id="mariageMenuContinueButton" type="button">Продовжити</button>
+          <button class="secondary-button" type="button" disabled>Історія <span>Незабаром</span></button>
+          <button class="secondary-button" type="button" disabled>Статистика <span>Незабаром</span></button>
+          <button class="secondary-button" id="mariageMenuBackButton" type="button">Назад</button>
+        </div>
+      </section>
+
+      <section class="setup-panel hidden" id="mariageSetupPanel">
+        <div class="main-title"><h1>Мар'яж</h1></div>
+        <fieldset class="player-count" id="mariagePlayerCount">
+          <legend class="player-qty">Кількість гравців</legend>
+          <label><input type="radio" name="mariagePlayerCount" value="3"><span>3</span></label>
+          <label><input type="radio" name="mariagePlayerCount" value="4" checked><span>4</span></label>
+        </fieldset>
+        <fieldset class="game-length">
+          <legend>Лижа</legend>
+          <label><input type="radio" name="mariageSkiMode" value="three" checked><span>Три: −100</span></label>
+          <label><input type="radio" name="mariageSkiMode" value="immediate"><span>Одна: −50</span></label>
+        </fieldset>
+        <fieldset class="game-length">
+          <legend>Розпис</legend>
+          <label><input type="radio" name="mariageRepaintMode" value="three" checked><span>Три: −120</span></label>
+          <label><input type="radio" name="mariageRepaintMode" value="immediate"><span>Один: −60</span></label>
+        </fieldset>
+        <div class="name-grid" id="mariagePlayerNameFields"></div>
+        <div class="setup-actions">
+          <button class="primary-button" id="mariageStartButton" type="button">Грати</button>
+          <button class="secondary-button" id="mariageSetupBackButton" type="button">Назад</button>
+        </div>
+      </section>
+
+      <section class="game-panel hidden" id="mariageGamePanel">
+        <header class="game-header">
+          <div><p class="eyebrow">Таблиця балів</p><h1>Мар'яж</h1></div>
+          <div class="game-actions">
+            <button class="icon-button mariage-edit-button" id="mariageEditButton" type="button" aria-label="Редагувати таблицю" title="Редагувати таблицю"><img src="assets/icons/edit-table.svg" alt=""></button>
+            <button class="secondary-button" id="mariageGameMenuButton" type="button">Меню</button>
+            <button class="secondary-button btn-new-game" id="mariageGameNewButton" type="button">Нова гра</button>
+          </div>
+        </header>
+        <section class="status-strip" aria-live="polite">
+          <div><span class="status-label">Раунд</span><strong id="mariageRoundLabel">0</strong></div>
+          <div><span class="status-label">Заказує</span><strong id="mariageOrderingLabel">—</strong></div>
+          <div><span class="status-label">Заказ</span><strong id="mariageOrderLabel">—</strong></div>
+          <div class="hidden" id="mariageBarrelStatus"><span class="status-label">Бочка</span><strong id="mariageBarrelLabel"></strong></div>
+        </section>
+        <section class="mariage-action-panel" id="mariageActionPanel" aria-live="polite">
+          <button class="primary-button" id="mariageNewRoundButton" type="button">Новий раунд</button>
+          <div class="hidden" id="mariageOrderPlayerStep">
+            <span class="status-label">Хто заказує?</span>
+            <div class="mariage-player-buttons" id="mariageOrderingPlayers"></div>
+          </div>
+          <div class="mariage-entry-row hidden" id="mariageOrderPointsStep">
+            <label for="mariageOrderPoints"><span class="status-label">Сума заказу</span></label>
+            <input id="mariageOrderPoints" type="number" inputmode="decimal">
+            <button class="primary-button" id="mariageConfirmOrderButton" type="button">Підтвердити заказ</button>
+            <button class="secondary-button" id="mariageCancelOrderButton" type="button">Закрити</button>
+          </div>
+          <div class="mariage-entry-row hidden" id="mariagePlayStep">
+            <button class="primary-button" id="mariageTakenButton" type="button">Взято</button>
+            <button class="secondary-button" id="mariageRepaintButton" type="button">Розпис</button>
+          </div>
+          <div class="hidden" id="mariageResultStep">
+            <button class="secondary-button mariage-result-repaint" id="mariageResultRepaintButton" type="button">Розпис</button>
+            <div id="mariageUnresolvedStep">
+              <span class="status-label">Запис балів</span>
+              <div class="mariage-player-buttons" id="mariageUnresolvedPlayers"></div>
+            </div>
+            <div class="hidden" id="mariageSelectedResultStep">
+              <span class="status-label" id="mariageSelectedPlayerRole">Результат гравця</span>
+              <strong class="mariage-current-player" id="mariageCurrentPlayer"></strong>
+              <div class="mariage-entry-row" id="mariageNumericResultEntry">
+                <input id="mariageActualPoints" type="number" min="0" inputmode="decimal" aria-label="Фактично взято балів">
+                <button class="primary-button" id="mariageConfirmActualButton" type="button">Записати</button>
+              </div>
+              <div class="mariage-quick-actions hidden" id="mariageOrderingQuickActions">
+                <button class="primary-button" id="mariageOrderingTakenButton" type="button">Взято</button>
+                <button class="secondary-button" id="mariageBiteButton" type="button">Байт</button>
+                <button class="secondary-button" id="mariageBiteSkiButton" type="button">Байт + Лижа</button>
+              </div>
+              <div class="mariage-quick-actions hidden" id="mariageNonOrderingQuickActions">
+                <button class="secondary-button" id="mariageSkiButton" type="button">Лижа</button>
+              </div>
+              <button class="secondary-button mariage-back-to-list" id="mariageResultBackButton" type="button">До списку</button>
+            </div>
+          </div>
+          <div class="hidden" id="mariageFactualStep">
+            <span class="status-label" id="mariageFactualTitle">Фактично взято</span>
+            <p>Вкажіть фактично взяті бали. Значення визначає черговість входу на Бочку та не змінює нараховані бали за виконаний заказ.</p>
+            <div class="mariage-entry-row">
+              <input id="mariageFactualPoints" type="number" min="0" inputmode="decimal" aria-label="Фактично взято для черговості входу на Бочку">
+              <button class="primary-button" id="mariageConfirmFactualButton" type="button">Підтвердити</button>
+            </div>
+          </div>
+          <p class="mariage-message" id="mariageMessage" role="alert"></p>
+        </section>
+        <div class="mariage-edit-toolbar hidden" id="mariageEditToolbar">
+          <strong>Режим редагування</strong>
+          <div>
+            <button class="secondary-button" id="mariageEditDiscardButton" type="button">Скасувати редагування</button>
+            <button class="primary-button" id="mariageEditApplyButton" type="button">Завершити</button>
+          </div>
+          <p class="mariage-edit-error" id="mariageEditError" role="alert"></p>
+        </div>
+        <div class="mariage-table-toolbar">
+          <button class="secondary-button hidden" id="mariageReplayButton" type="button">Переграти раунд</button>
+          <span class="mariage-dealer" id="mariageDealer"></span>
+        </div>
+        <div class="table-wrap" aria-label="Таблиця балів Мар'яж">
+          <table class="score-table mariage-table" id="mariageScoreTable"></table>
+        </div>
+      </section>
+
+      <div class="mariage-replay-overlay hidden" id="mariageReplayDialog" aria-hidden="true">
+        <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageReplayTitle" aria-describedby="mariageReplayDescription">
+          <h2 id="mariageReplayTitle">Переграти раунд?</h2>
+          <p id="mariageReplayDescription">Усі дані поточного раунду буде скасовано.</p>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageReplayNoButton" type="button">Ні</button>
+            <button class="primary-button" id="mariageReplayYesButton" type="button">Так</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mariage-replay-overlay hidden" id="mariageEditConfirmDialog" aria-hidden="true">
+        <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageEditConfirmTitle" aria-describedby="mariageEditConfirmDescription">
+          <h2 id="mariageEditConfirmTitle"></h2>
+          <p id="mariageEditConfirmDescription"></p>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageEditConfirmNo" type="button"></button>
+            <button class="primary-button" id="mariageEditConfirmYes" type="button"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mariage-replay-overlay hidden" id="mariageValueEditor" aria-hidden="true">
+        <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageValueEditorTitle">
+          <h2 id="mariageValueEditorTitle">Редагувати дані</h2>
+          <div class="mariage-value-fields" id="mariageValueFields"></div>
+          <p class="mariage-edit-error" id="mariageValueError" role="alert"></p>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageValueCancel" type="button">Скасувати</button>
+            <button class="primary-button" id="mariageValueSave" type="button">Зберегти</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="setup-panel hidden" id="setupPanel">
+        <div class="main-title">
+          <h1 class="name-current-game">Покер</h1>
+        </div>
+
+        <fieldset class="player-count">
+          <legend class="player-qty">Кількість гравців</legend>
+          <label>
+            <input type="radio" name="playerCount" value="2">
+            <span>2</span>
+          </label>
+          <label>
+            <input type="radio" name="playerCount" value="3">
+            <span>3</span>
+          </label>
+          <label>
+            <input type="radio" name="playerCount" value="4" checked>
+            <span>4</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="game-length">
+          <legend>Режим гри</legend>
+          <label>
+            <input type="radio" name="gameLength" value="short">
+            <span id="shortGameLabel">Скорочена 1-4</span>
+          </label>
+          <label>
+            <input type="radio" name="gameLength" value="full" checked>
+            <span id="fullGameLabel">Довга 1-8</span>
+          </label>
+        </fieldset>
+
+        <div class="name-grid" id="playerNameFields"></div>
+
+        <div class="setup-actions">
+          <button class="primary-button" id="startGameButton" type="button">Грати</button>
+          <button class="secondary-button" id="setupBackButton" type="button">Назад</button>
+        </div>
+      </section>
+
+      <section class="game-panel hidden" id="gamePanel">
+        <header class="game-header">
+          <div>
+            <p class="eyebrow">Таблиця балів</p>
+            <h1>Покер</h1>
+          </div>
+          <div class="game-actions">
+            <button class="secondary-button hidden" id="resultsButton" type="button">Результати</button>
+            <button class="secondary-button" id="gameMenuButton" type="button">Меню</button>
+            <button class="secondary-button btn-new-game" id="newGameButton" type="button">Нова гра</button>
+          </div>
+        </header>
+
+        <section class="status-strip" aria-live="polite">
+          <div>
+            <span class="status-label">Раунд</span>
+            <strong id="currentRoundLabel">1</strong>
+          </div>
+          <div>
+            <span class="status-label">Гравець</span>
+            <strong id="activePlayerLabel">Гравець 1</strong>
+          </div>
+        </section>
+
+        <section class="current-turn-action" id="currentTurnAction" aria-live="polite">
+          <div class="current-turn-copy">
+            <strong class="current-turn-player" id="currentTurnPlayer">Гравець 1</strong>
+            <p class="current-turn-remaining hidden" id="currentTurnRemaining"></p>
+          </div>
+          <button class="primary-button current-turn-button" id="currentTurnButton" type="button">Замовити</button>
+        </section>
+
+        <div class="table-wrap" aria-label="Таблиця балів Покеру">
+          <table class="score-table" id="scoreTable"></table>
+        </div>
+
+        <div class="round-order-status-bar hidden" id="roundOrderStatusBar">
+          <div class="round-order-status" id="roundOrderStatus" aria-live="polite">
+            <strong class="round-order-progress" id="roundOrderProgress">Замовлено: 0 / 1</strong>
+            <span class="round-order-classification hidden" id="roundOrderClassification"></span>
+          </div>
+        </div>
+
+      </section>
+
+      <div class="number-picker-overlay hidden" id="numberPickerOverlay" aria-hidden="true">
+        <div
+          class="number-picker-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="numberPickerTitle"
+          tabindex="-1"
+        >
+          <div class="number-picker-header">
+            <div>
+              <span class="status-label" id="numberPickerTitle">Заказ взяток</span>
+              <strong id="numberPickerPlayer">Гравець 1</strong>
+              <p class="hint" id="numberPickerHint"></p>
+            </div>
+            <button class="icon-button" id="numberPickerCloseButton" type="button" aria-label="Close">x</button>
+          </div>
+          <div class="game-choice-section hidden" id="numberPickerGameChoiceSection">
+            <span class="status-label">Оберіть гру</span>
+            <div
+              class="game-choice-buttons"
+              id="numberPickerGameChoices"
+              role="group"
+              aria-label="Вибір гри"
+            ></div>
+          </div>
+          <span class="status-label number-picker-values-label hidden" id="numberPickerValuesLabel">Кількість взяток</span>
+          <div class="modal-value-buttons" id="numberPickerValues"></div>
+          <button class="secondary-button modal-cancel" id="numberPickerCancelButton" type="button">Відмінити</button>
+        </div>
+      </div>
+
+      <div class="final-results-overlay hidden" id="finalResultsOverlay" aria-hidden="true">
+        <section
+          class="final-results-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finalResultsTitle"
+          aria-describedby="finalWinnerNames finalWinnerScore"
+          tabindex="-1"
+        >
+          <header class="final-winner">
+            <span class="final-trophy" aria-hidden="true">🏆</span>
+            <span class="status-label" id="finalResultsTitle">ПЕРЕМОЖЕЦЬ</span>
+            <strong class="final-winner-names" id="finalWinnerNames"></strong>
+            <span class="final-winner-score" id="finalWinnerScore"></span>
+          </header>
+          <div class="final-standings" id="finalStandings" role="list" aria-label="Підсумкові місця"></div>
+          <div class="final-results-actions">
+            <button class="primary-button" id="finalNewGameButton" type="button">Нова гра</button>
+            <button class="secondary-button" id="finalExitButton" type="button">Вийти</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
