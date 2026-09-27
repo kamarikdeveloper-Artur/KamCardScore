@@ -13,6 +13,7 @@
     4: CONFIG.players[4].maxRoundPoints
   });
   const BARREL_ENTRY_SCORE = CONFIG.barrel.entryScore;
+  const BARREL_WIN_SCORE = CONFIG.barrel.winningScore;
   const BARREL_EXIT_SCORE = CONFIG.barrel.ordinaryExitScore;
   const BARREL_MINIMUM_ORDER = CONFIG.barrel.minimumOrder;
   const BARREL_MAX_ATTEMPTS = CONFIG.barrel.maxAttempts;
@@ -512,6 +513,7 @@
 
     if (holderIsOrdering && holderResult && round.primary.resolution === "normal" &&
       round.primary.orderingResult === "taken") {
+      setPostTransitionScore(state, round, holder.id, BARREL_WIN_SCORE);
       state.status = "completed";
       state.winnerPlayerId = holder.id;
       state.completedAt = round.completedAt || new Date().toISOString();
@@ -723,8 +725,8 @@
     return rebuilt;
   }
 
-  function getPresentation(result, rules) {
-    return STATUS_ICONS.describeResult(result, rules);
+  function getPresentation(result, rules, context) {
+    return STATUS_ICONS.describeResult(result, rules, context);
   }
 
   function getBarrelHistoryPresentation(state, round, playerId) {
@@ -819,7 +821,14 @@
       orderingQuickActions: document.getElementById("mariageOrderingQuickActions"),
       nonOrderingQuickActions: document.getElementById("mariageNonOrderingQuickActions"),
       message: document.getElementById("mariageMessage"),
-      table: document.getElementById("mariageScoreTable")
+      table: document.getElementById("mariageScoreTable"),
+      finalResults: document.getElementById("mariageFinalResultsOverlay"),
+      finalDialog: document.querySelector("#mariageFinalResultsOverlay .final-results-dialog"),
+      finalWinnerName: document.getElementById("mariageFinalWinnerName"),
+      finalWinnerScore: document.getElementById("mariageFinalWinnerScore"),
+      finalStandings: document.getElementById("mariageFinalStandings"),
+      finalReplay: document.getElementById("mariageFinalReplayButton"),
+      finalClose: document.getElementById("mariageFinalCloseButton")
     };
     let state = null;
     let draftOrderingPlayerId = null;
@@ -833,6 +842,7 @@
     let valueTarget = null;
     let lastTouch = { key: null, at: 0 };
     let lastTouchActivationAt = 0;
+    let dismissedFinalResultsGameId = null;
 
     function load() {
       const saved = storage.loadGameByType(GAME_TYPE);
@@ -869,12 +879,15 @@
 
     function showMenu() {
       if (editDraft) return;
+      closeFinalResults(false);
       elements.menuContinue.disabled = !load();
       navigate(screens.MARIAGE_MENU);
     }
 
     function requestNewGame() {
       if (editDraft) return;
+      closeFinalResults(false);
+      dismissedFinalResultsGameId = null;
       const saved = load();
       if (saved && !window.confirm("Початок нової гри замінить поточну гру Мар'яж. Продовжити?")) {
         showMenu();
@@ -942,6 +955,47 @@
     function showGame() {
       navigate(screens.MARIAGE_GAME);
       render();
+    }
+
+    function renderFinalResults() {
+      const winner = getPlayer(state, state.winnerPlayerId);
+      if (!winner) return;
+      elements.finalWinnerName.textContent = winner.name;
+      elements.finalWinnerScore.textContent = `${winner.score} балів`;
+      elements.finalStandings.replaceChildren();
+      state.players.slice().sort(function (left, right) { return right.score - left.score; }).forEach(function (player, index) {
+        const row = document.createElement("div");
+        const place = document.createElement("strong");
+        const name = document.createElement("span");
+        const score = document.createElement("strong");
+        row.className = "final-standing-row";
+        row.setAttribute("role", "listitem");
+        if (player.id === state.winnerPlayerId) row.classList.add("winner");
+        place.className = "final-standing-place";
+        place.textContent = `${index + 1} місце`;
+        name.className = "final-standing-name";
+        name.textContent = player.name;
+        score.className = "final-standing-score";
+        score.textContent = String(player.score);
+        row.append(place, name, score);
+        elements.finalStandings.appendChild(row);
+      });
+    }
+
+    function openFinalResults() {
+      if (!state || state.status !== "completed" || dismissedFinalResultsGameId === state.id || editDraft) return;
+      renderFinalResults();
+      elements.finalResults.classList.remove("hidden");
+      elements.finalResults.setAttribute("aria-hidden", "false");
+      document.body.classList.add("modal-open");
+      elements.finalDialog.focus();
+    }
+
+    function closeFinalResults(markDismissed) {
+      elements.finalResults.classList.add("hidden");
+      elements.finalResults.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      if (markDismissed !== false && state) dismissedFinalResultsGameId = state.id;
     }
 
     function rulesAreLocked(game) {
@@ -1411,6 +1465,7 @@
       if (editDraft) return;
       try {
         replayLatestRound(state);
+        dismissedFinalResultsGameId = null;
         draftOrderingPlayerId = null;
         selectedResultPlayerId = null;
         orderDialogOpen = false;
@@ -1448,14 +1503,6 @@
         button.addEventListener("click", function () { selectResultPlayer(player.id); });
         elements.unresolvedPlayers.appendChild(button);
       });
-    }
-
-    function appendResultContent(cell, result) {
-      STATUS_ICONS.renderStatus(cell, getPresentation(result, state.rules));
-    }
-
-    function appendBarrelContent(cell, presentation) {
-      STATUS_ICONS.renderBarrel(cell, presentation);
     }
 
     function renderEditInputRow(body, round, displayState) {
@@ -1537,14 +1584,24 @@
           resultCell.className = "result-cell mariage-result-cell";
           scoreCell.className = "score-cell";
           if (result) {
-            if (barrelPresentation) appendBarrelContent(resultCell, barrelPresentation);
-            else appendResultContent(resultCell, result);
+            const exact555Reset = Boolean(round.scoreRules && Array.isArray(round.scoreRules.exact555ResetPlayerIds) &&
+              round.scoreRules.exact555ResetPlayerIds.includes(player.id));
+            const presentation = STATUS_ICONS.describeCell({
+              barrel: barrelPresentation,
+              result,
+              rules: displayState.rules,
+              exact555Reset
+            });
+            STATUS_ICONS.renderCell(resultCell, presentation);
             scoreCell.textContent = String(result.cumulativeScore);
-            if (isCycleComplete(displayState, player.id, "ski", result.skiCycleId) ||
-              isCycleComplete(displayState, player.id, "repaint", result.repaintCycleId)) {
+            if (presentation.type !== "exact555Reset" &&
+              (isCycleComplete(displayState, player.id, "ski", result.skiCycleId) ||
+                isCycleComplete(displayState, player.id, "repaint", result.repaintCycleId))) {
               resultCell.classList.add("completed-cycle");
             }
-            if (result.semantic.repaintBeneficiary) resultCell.classList.add("neutral-result");
+            if (presentation.type !== "exact555Reset" && result.semantic.repaintBeneficiary) {
+              resultCell.classList.add("neutral-result");
+            }
           } else if (round === displayState.activeRound && round.orderingPlayerId === player.id && round.orderPoints !== null) {
             resultCell.textContent = "--";
             scoreCell.textContent = String(round.orderPoints);
@@ -1655,6 +1712,7 @@
         }
       }
       renderTable(viewState);
+      if (!editing && viewState.status === "completed") openFinalResults();
     }
 
     document.querySelectorAll("input[name='mariagePlayerCount']").forEach(function (radio) {
@@ -1677,6 +1735,11 @@
     elements.replay.addEventListener("click", openReplayDialog);
     elements.replayNo.addEventListener("click", closeReplayDialog);
     elements.replayYes.addEventListener("click", confirmReplay);
+    elements.finalReplay.addEventListener("click", function () {
+      closeFinalResults();
+      openReplayDialog();
+    });
+    elements.finalClose.addEventListener("click", function () { closeFinalResults(); });
     document.getElementById("mariageConfirmActualButton").addEventListener("click", enterActual);
     document.getElementById("mariageConfirmFactualButton").addEventListener("click", enterRequiredFactualPoints);
     document.getElementById("mariageOrderingTakenButton").addEventListener("click", function () { enterQuick("taken"); });
@@ -1710,6 +1773,7 @@
     SUPPORTED_PLAYER_COUNTS,
     MAXIMUM_POINTS_BY_PLAYER_COUNT,
     BARREL_ENTRY_SCORE,
+    BARREL_WIN_SCORE,
     BARREL_EXIT_SCORE,
     BARREL_MINIMUM_ORDER,
     BARREL_MAX_ATTEMPTS,

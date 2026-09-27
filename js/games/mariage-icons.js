@@ -7,13 +7,25 @@
     biteSki: Object.freeze({ fallback: "Б+Л", asset: null }),
     ski: Object.freeze({ fallback: "Л", asset: null }),
     repaint: Object.freeze({ fallback: "Р", asset: null }),
-    repaintBeneficiary: Object.freeze({ fallback: "--", asset: null }),
+    repaintBeneficiary: Object.freeze({ fallback: "+", asset: null }),
+    exact555Reset: Object.freeze({ fallback: "555", asset: null }),
     barrel: Object.freeze({ fallback: "Бч", asset: "assets/icons/icon_barrel.svg" })
   });
 
-  function describeResult(result, rules) {
+  function describeResult(result, rules, context) {
+    const presentation = context || {};
     if (!result) return { type: "empty", text: "--" };
-    if (result.semantic.repaintBeneficiary) return { type: "semantic", semantic: "repaintBeneficiary", ...REGISTRY.repaintBeneficiary };
+    if (presentation.exact555Reset) {
+      return {
+        type: "exact555Reset", semantic: "exact555Reset", text: "555",
+        label: "Рівно 555 — рахунок скинуто до 0", ...REGISTRY.exact555Reset
+      };
+    }
+    if (result.semantic.repaintBeneficiary) {
+      const amount = Number(result.delta);
+      const fallback = Number.isFinite(amount) ? `${amount >= 0 ? "+" : ""}${amount}` : REGISTRY.repaintBeneficiary.fallback;
+      return { type: "semantic", semantic: "repaintBeneficiary", ...REGISTRY.repaintBeneficiary, fallback };
+    }
     if (result.semantic.repaint) {
       return { type: "semantic", semantic: "repaint", ...REGISTRY.repaint,
         badge: rules.repaint.penaltyMode === "three" ? result.repaintCycleNumber : null };
@@ -38,6 +50,11 @@
     return { type: "barrel", semantic: "barrel", active: Boolean(active), ...REGISTRY.barrel };
   }
 
+  function describeCell(options) {
+    if (options.barrel) return options.barrel;
+    return describeResult(options.result, options.rules, { exact555Reset: options.exact555Reset });
+  }
+
   function appendBadge(container, badge) {
     if (badge === null || badge === undefined) return;
     const element = document.createElement("span");
@@ -57,6 +74,19 @@
   function renderStatus(cell, descriptor) {
     if (descriptor.type === "empty" || descriptor.type === "factual") {
       cell.textContent = descriptor.text;
+      return;
+    }
+    if (descriptor.type === "exact555Reset") {
+      const container = document.createElement("span");
+      const value = document.createElement("span");
+      container.className = "mariage-result mariage-result--exact555";
+      container.setAttribute("role", "img");
+      container.setAttribute("aria-label", descriptor.label);
+      container.title = descriptor.label;
+      value.className = "mariage-result-value";
+      value.textContent = descriptor.text;
+      container.appendChild(value);
+      cell.appendChild(container);
       return;
     }
     const container = document.createElement("span");
@@ -99,11 +129,18 @@
     cell.appendChild(icon);
   }
 
+  function renderCell(cell, descriptor) {
+    if (descriptor.type === "barrel") renderBarrel(cell, descriptor);
+    else renderStatus(cell, descriptor);
+  }
+
   window.MariageStatusIcons = Object.freeze({
     REGISTRY,
     describeResult,
     describeBarrel,
+    describeCell,
     renderStatus,
-    renderBarrel
+    renderBarrel,
+    renderCell
   });
 })();

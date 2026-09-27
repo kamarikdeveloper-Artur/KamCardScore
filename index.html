@@ -196,6 +196,29 @@
         </div>
       </div>
 
+      <div class="final-results-overlay hidden" id="mariageFinalResultsOverlay" aria-hidden="true">
+        <section
+          class="final-results-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mariageFinalResultsTitle"
+          aria-describedby="mariageFinalWinnerName mariageFinalWinnerScore"
+          tabindex="-1"
+        >
+          <header class="final-winner">
+            <span class="final-trophy" aria-hidden="true">🏆</span>
+            <span class="status-label" id="mariageFinalResultsTitle">ПЕРЕМОЖЕЦЬ</span>
+            <strong class="final-winner-names" id="mariageFinalWinnerName"></strong>
+            <span class="final-winner-score" id="mariageFinalWinnerScore"></span>
+          </header>
+          <div class="final-standings" id="mariageFinalStandings" role="list" aria-label="Підсумкові місця Мар'яж"></div>
+          <div class="final-results-actions">
+            <button class="primary-button" id="mariageFinalReplayButton" type="button">Переграти раунд</button>
+            <button class="secondary-button" id="mariageFinalCloseButton" type="button">Закрити</button>
+          </div>
+        </section>
+      </div>
+
       <div class="mariage-replay-overlay hidden" id="mariageReplayDialog" aria-hidden="true">
         <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageReplayTitle" aria-describedby="mariageReplayDescription">
           <h2 id="mariageReplayTitle">Переграти раунд?</h2>

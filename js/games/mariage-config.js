@@ -11,6 +11,7 @@
       repaint: Object.freeze({ penaltyMode: "three", awardMode: "fixed60" }),
       exact555Reset: false
     }),
+    // Керування 
     players: Object.freeze({
       3: Object.freeze({ minOrder: 100, maxOrder: 420, maxRoundPoints: 420 }),
       4: Object.freeze({ minOrder: 100, maxOrder: 420, maxRoundPoints: 420 })
@@ -30,6 +31,7 @@
     }),
     barrel: Object.freeze({
       entryScore: 880,
+      winningScore: 1001,
       minimumOrder: 120,
       maxAttempts: 3,
       ordinaryExitScore: 760,
