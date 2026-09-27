@@ -12,6 +12,7 @@
     <script defer src="js/storage.js"></script>
     <script defer src="js/games/poker.js"></script>
     <script defer src="js/games/mariage-config.js"></script>
+    <script defer src="js/games/mariage-icons.js"></script>
     <script defer src="js/games/mariage.js"></script>
     <script defer src="js/app.js"></script>
   </head>
@@ -28,7 +29,7 @@
       <section class="shell-panel hidden" id="pokerMenuPanel">
         <header class="shell-heading">
           <p class="eyebrow">Нотатник</p>
-          <h1>Покер</h1>
+          <h1 class="title-game-neme">Покер</h1>
         </header>
         <div class="menu-actions">
           <button class="primary-button" id="menuNewGameButton" type="button">Нова гра</button>
@@ -42,7 +43,7 @@
       <section class="shell-panel hidden" id="mariageMenuPanel">
         <header class="shell-heading">
           <p class="eyebrow">Нотатник</p>
-          <h1>Мар'яж</h1>
+          <h1 class="title-game-neme">Мар'яж</h1>
         </header>
         <div class="menu-actions">
           <button class="primary-button" id="mariageMenuNewButton" type="button">Нова гра</button>
@@ -70,6 +71,10 @@
           <label><input type="radio" name="mariageRepaintMode" value="three" checked><span>Три: −120</span></label>
           <label><input type="radio" name="mariageRepaintMode" value="immediate"><span>Один: −60</span></label>
         </fieldset>
+        <fieldset class="game-length">
+          <legend>Додаткові правила</legend>
+          <label><input id="mariageExact555Reset" type="checkbox"><span>Рівно 555 → 0</span></label>
+        </fieldset>
         <div class="name-grid" id="mariagePlayerNameFields"></div>
         <div class="setup-actions">
           <button class="primary-button" id="mariageStartButton" type="button">Грати</button>
@@ -81,7 +86,7 @@
         <header class="game-header">
           <div><p class="eyebrow">Таблиця балів</p><h1>Мар'яж</h1></div>
           <div class="game-actions">
-            <button class="icon-button mariage-edit-button" id="mariageEditButton" type="button" aria-label="Редагувати таблицю" title="Редагувати таблицю"><img src="assets/icons/edit-table.svg" alt=""></button>
+            <button class="secondary-button" id="mariageSettingsButton" type="button">Налаштування</button>
             <button class="secondary-button" id="mariageGameMenuButton" type="button">Меню</button>
             <button class="secondary-button btn-new-game" id="mariageGameNewButton" type="button">Нова гра</button>
           </div>
@@ -94,6 +99,7 @@
         </section>
         <section class="mariage-action-panel" id="mariageActionPanel" aria-live="polite">
           <button class="primary-button" id="mariageNewRoundButton" type="button">Новий раунд</button>
+          <button class="secondary-button hidden" id="mariageReorderButton" type="button">Перезаказати</button>
           <div class="hidden" id="mariageOrderPlayerStep">
             <span class="status-label">Хто заказує?</span>
             <div class="mariage-player-buttons" id="mariageOrderingPlayers"></div>
@@ -158,6 +164,37 @@
           <table class="score-table mariage-table" id="mariageScoreTable"></table>
         </div>
       </section>
+
+      <div class="mariage-replay-overlay hidden" id="mariageSettingsDialog" aria-hidden="true">
+        <div class="mariage-replay-dialog mariage-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageSettingsTitle">
+          <h2 id="mariageSettingsTitle">Налаштування гри</h2>
+          <section class="mariage-settings-section">
+            <h3>Правила</h3>
+            <label>Лижа
+              <select id="mariageSettingsSkiMode">
+                <option value="three">Три: −100</option>
+                <option value="immediate">Одна: −50</option>
+              </select>
+            </label>
+            <label>Штраф за Розпис
+              <select id="mariageSettingsRepaintMode">
+                <option value="three">Три: −120</option>
+                <option value="immediate">Один: −60</option>
+              </select>
+            </label>
+            <label class="mariage-settings-check"><input id="mariageSettingsExact555" type="checkbox"><span>Рівно 555 → 0</span></label>
+            <p class="future-note hidden" id="mariageSettingsLocked">Правила зафіксовано після внесення результатів.</p>
+          </section>
+          <section class="mariage-settings-section">
+            <h3>Керування</h3>
+            <button class="secondary-button mariage-settings-edit" id="mariageEditButton" type="button"><img src="assets/icons/edit-table.svg" alt="">Редагувати таблицю</button>
+          </section>
+          <div class="mariage-replay-actions">
+            <button class="secondary-button" id="mariageSettingsCloseButton" type="button">Закрити</button>
+            <button class="primary-button" id="mariageSettingsSaveButton" type="button">Зберегти</button>
+          </div>
+        </div>
+      </div>
 
       <div class="mariage-replay-overlay hidden" id="mariageReplayDialog" aria-hidden="true">
         <div class="mariage-replay-dialog" role="dialog" aria-modal="true" aria-labelledby="mariageReplayTitle" aria-describedby="mariageReplayDescription">

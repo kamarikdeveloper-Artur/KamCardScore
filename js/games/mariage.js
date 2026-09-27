@@ -2,7 +2,9 @@
   "use strict";
 
   const CONFIG = window.MARIAGE_CONFIG;
+  const STATUS_ICONS = window.MariageStatusIcons;
   if (!CONFIG) throw new Error("Mariage rules configuration is unavailable");
+  if (!STATUS_ICONS) throw new Error("Mariage status icon system is unavailable");
   const GAME_TYPE = "mariage";
   const MODES = CONFIG.modes;
   const SUPPORTED_PLAYER_COUNTS = CONFIG.supportedPlayerCounts;
@@ -14,20 +16,7 @@
   const BARREL_EXIT_SCORE = CONFIG.barrel.ordinaryExitScore;
   const BARREL_MINIMUM_ORDER = CONFIG.barrel.minimumOrder;
   const BARREL_MAX_ATTEMPTS = CONFIG.barrel.maxAttempts;
-  const PRESENTATION = Object.freeze({
-    success: Object.freeze({ fallback: "✅", asset: null }),
-    bite: Object.freeze({ fallback: "Б", asset: "assets/mariage/results/bite.svg" }),
-    ski1: Object.freeze({ fallback: "L1", asset: "assets/mariage/results/ski.svg" }),
-    ski2: Object.freeze({ fallback: "L2", asset: "assets/mariage/results/ski.svg" }),
-    ski3: Object.freeze({ fallback: "L3", asset: "assets/mariage/results/ski.svg" }),
-    ski: Object.freeze({ fallback: "L", asset: "assets/mariage/results/ski.svg" }),
-    repaint1: Object.freeze({ fallback: "Р1", asset: "assets/mariage/results/repaint.svg" }),
-    repaint2: Object.freeze({ fallback: "Р2", asset: "assets/mariage/results/repaint.svg" }),
-    repaint3: Object.freeze({ fallback: "Р3", asset: "assets/mariage/results/repaint.svg" }),
-    repaint: Object.freeze({ fallback: "Р", asset: "assets/mariage/results/repaint.svg" }),
-    biteSki: Object.freeze({ fallback: "🚫", asset: "assets/mariage/results/bite-ski.svg" }),
-    repaintBeneficiary: Object.freeze({ fallback: "--", asset: null })
-  });
+  const PRESENTATION = STATUS_ICONS.REGISTRY;
 
   function createPlayerCycleState(players) {
     return players.reduce(function (map, player) {
@@ -55,19 +44,54 @@
     return rules ? rules.maxRoundPoints : null;
   }
 
+  function createRules(options) {
+    const supplied = options.rules || {};
+    const repaint = supplied.repaint || {};
+    return {
+      profileId: supplied.profileId || CONFIG.defaultRules.profileId,
+      skiMode: supplied.skiMode || options.skiMode || CONFIG.defaultRules.skiMode,
+      repaint: {
+        penaltyMode: repaint.penaltyMode || options.repaintMode || CONFIG.defaultRules.repaint.penaltyMode,
+        awardMode: repaint.awardMode || CONFIG.defaultRules.repaint.awardMode
+      },
+      exact555Reset: supplied.exact555Reset === undefined
+        ? Boolean(options.exact555Reset) : Boolean(supplied.exact555Reset)
+    };
+  }
+
+  function isValidRules(rules) {
+    return Boolean(rules) && MODES.includes(rules.skiMode) && Boolean(rules.repaint) &&
+      MODES.includes(rules.repaint.penaltyMode) && CONFIG.repaintAwardModes.includes(rules.repaint.awardMode) &&
+      typeof rules.exact555Reset === "boolean";
+  }
+
+  function normalizeGameRules(game) {
+    if (!isValidRules(game.rules)) {
+      game.rules = createRules({
+        skiMode: game.settings && game.settings.skiMode,
+        repaintMode: game.settings && game.settings.repaintMode,
+        exact555Reset: false
+      });
+    }
+    game.settings = { skiMode: game.rules.skiMode, repaintMode: game.rules.repaint.penaltyMode };
+    return game.rules;
+  }
+
   function createGame(options) {
     const players = options.players.map(function (player, index) {
       return { id: player.id || `p${index + 1}`, name: player.name || `Гравець ${index + 1}`, score: 0 };
     });
     if (!isSupportedPlayerCount(players.length)) throw new Error("Mariage supports 3 or 4 players");
-    if (!MODES.includes(options.skiMode) || !MODES.includes(options.repaintMode)) throw new Error("Invalid Mariage mode");
+    const rules = createRules(options);
+    if (!isValidRules(rules)) throw new Error("Invalid Mariage rules");
     return {
       id: options.id,
       gameType: GAME_TYPE,
       startedAt: options.startedAt,
       playerCount: players.length,
       players,
-      settings: { skiMode: options.skiMode, repaintMode: options.repaintMode },
+      rules,
+      settings: { skiMode: rules.skiMode, repaintMode: rules.repaint.penaltyMode },
       cycleState: createPlayerCycleState(players),
       barrelState: createBarrelState(players),
       rounds: [],
@@ -92,6 +116,7 @@
       resultPlayerIndex: null,
       resolvedPlayerIds: [],
       results: {},
+      scoreRules: null,
       primary: { resolution: "normal", orderingResult: null, orderingActualPoints: null, actuals: {} },
       startState: {
         scores: state.players.reduce(function (scores, player) {
@@ -111,6 +136,40 @@
     if (!state || !state.players.length) return null;
     const sequence = state.activeRound ? state.activeRound.sequence : state.rounds.length + 1;
     return state.players[(sequence - 1) % state.players.length];
+  }
+
+  function hasRoundResultEntryStarted(round) {
+    if (!round) return false;
+    const primary = round.primary || {};
+    return primary.resolution === "repaint" || primary.orderingResult !== null && primary.orderingResult !== undefined ||
+      primary.orderingActualPoints !== null && primary.orderingActualPoints !== undefined ||
+      Boolean(primary.actuals && Object.keys(primary.actuals).length) ||
+      Boolean(round.results && Object.keys(round.results).length) ||
+      Boolean(round.resolvedPlayerIds && round.resolvedPlayerIds.length) || Boolean(round.repaint);
+  }
+
+  function canReorderCurrentRound(state) {
+    const round = state && state.activeRound;
+    return Boolean(round && state.status !== "completed" && round.status === "open" &&
+      round.orderingPlayerId && round.orderPoints !== null &&
+      ["physical-play", "results"].includes(round.phase) && !hasRoundResultEntryStarted(round));
+  }
+
+  function reorderCurrentRound(state) {
+    if (!canReorderCurrentRound(state)) throw new Error("Current Mariage round cannot be reordered");
+    const round = state.activeRound;
+    round.phase = "ordering-player";
+    round.orderingPlayerId = null;
+    round.orderPoints = null;
+    round.repaint = false;
+    round.resultPlayerIndex = null;
+    round.resolvedPlayerIds = [];
+    round.results = {};
+    round.scoreRules = null;
+    round.primary = { resolution: "normal", orderingResult: null, orderingActualPoints: null, actuals: {} };
+    delete round.factualRequiredPlayerId;
+    delete round.barrel;
+    return round;
   }
 
   function restoreRoundStart(state, round) {
@@ -139,7 +198,7 @@
 
   function applySki(state, playerId) {
     const skiState = state.cycleState[playerId].ski;
-    if (state.settings.skiMode === "immediate") {
+    if (state.rules.skiMode === "immediate") {
       return { penalty: -CONFIG.ski.immediatePenalty, cycleNumber: null, cycleId: null };
     }
     skiState.count += 1;
@@ -154,7 +213,7 @@
 
   function applyRepaint(state, playerId) {
     const repaintState = state.cycleState[playerId].repaint;
-    if (state.settings.repaintMode === "immediate") {
+    if (state.rules.repaint.penaltyMode === "immediate") {
       return { penalty: -CONFIG.repaint.immediatePenalty, cycleNumber: null, cycleId: null };
     }
     repaintState.count += 1;
@@ -305,6 +364,7 @@
     restoreRoundStart(state, round);
     round.primary = primary;
     round.results = {};
+    round.scoreRules = null;
     state.players.forEach(function (player) {
       if (hasPrimaryResult(round, player.id)) applyCollectedPlayerResult(state, round, player.id);
     });
@@ -491,8 +551,23 @@
     return { completed: true, factualRequiredPlayerId: null };
   }
 
+  function applyPostRoundScoreRules(state, round) {
+    if (round.scoreRules) return round.scoreRules;
+    const resetPlayerIds = [];
+    if (state.rules.exact555Reset) {
+      state.players.forEach(function (player) {
+        if (player.score !== 555) return;
+        setPostTransitionScore(state, round, player.id, CONFIG.scoreRules.exact555ResetScore);
+        resetPlayerIds.push(player.id);
+      });
+    }
+    round.scoreRules = { exact555ResetPlayerIds: resetPlayerIds };
+    return round.scoreRules;
+  }
+
   function finishRound(state) {
     const round = state.activeRound;
+    applyPostRoundScoreRules(state, round);
     const transition = processBarrelTransitions(state, round);
     if (transition.factualRequiredPlayerId) {
       round.phase = "ordering-factual";
@@ -552,8 +627,9 @@
 
   function recalculateMariageGame(gameDraft) {
     const source = JSON.parse(JSON.stringify(gameDraft));
+    normalizeGameRules(source);
     if (!isSupportedPlayerCount(source.playerCount) || source.players.length !== source.playerCount ||
-      !MODES.includes(source.settings.skiMode) || !MODES.includes(source.settings.repaintMode)) {
+      !isValidRules(source.rules)) {
       throw new Error("Некоректні налаштування гри.");
     }
     const playerIds = source.players.map(function (player) { return player.id; });
@@ -647,20 +723,8 @@
     return rebuilt;
   }
 
-  function getPresentationKey(result, settings) {
-    if (!result) return null;
-    if (result.semantic.repaintBeneficiary) return "repaintBeneficiary";
-    if (result.semantic.repaint) return settings.repaintMode === "immediate" ? "repaint" : `repaint${result.repaintCycleNumber}`;
-    if (result.semantic.bite && result.semantic.ski) return "biteSki";
-    if (result.semantic.bite) return "bite";
-    if (result.semantic.ski) return settings.skiMode === "immediate" ? "ski" : `ski${result.skiCycleNumber}`;
-    if (result.semantic.success) return "success";
-    return null;
-  }
-
-  function getPresentation(result, settings) {
-    const key = getPresentationKey(result, settings);
-    return key ? { key, fallback: PRESENTATION[key].fallback, asset: PRESENTATION[key].asset } : null;
+  function getPresentation(result, rules) {
+    return STATUS_ICONS.describeResult(result, rules);
   }
 
   function getBarrelHistoryPresentation(state, round, playerId) {
@@ -676,11 +740,12 @@
     }, null);
     const barrel = state.barrelState && state.barrelState[playerId];
     const active = Boolean(barrel && barrel.onBarrel && latestEntryRound && latestEntryRound.sequence === round.sequence);
-    return { active, asset: "assets/icons/icon_barrel.svg" };
+    return STATUS_ICONS.describeBarrel(active);
   }
 
   function isCycleComplete(state, playerId, type, cycleId) {
-    if (!cycleId || state.settings[`${type}Mode`] !== "three") return false;
+    const mode = type === "ski" ? state.rules.skiMode : state.rules.repaint.penaltyMode;
+    if (!cycleId || mode !== "three") return false;
     const numberKey = `${type}CycleNumber`;
     const idKey = `${type}CycleId`;
     const cycleLength = CONFIG[type].cycleLength;
@@ -699,10 +764,19 @@
       setupNames: document.getElementById("mariagePlayerNameFields"),
       dealer: document.getElementById("mariageDealer"),
       replay: document.getElementById("mariageReplayButton"),
+      reorder: document.getElementById("mariageReorderButton"),
       replayDialog: document.getElementById("mariageReplayDialog"),
       replayNo: document.getElementById("mariageReplayNoButton"),
       replayYes: document.getElementById("mariageReplayYesButton"),
       actionPanel: document.getElementById("mariageActionPanel"),
+      settingsButton: document.getElementById("mariageSettingsButton"),
+      settingsDialog: document.getElementById("mariageSettingsDialog"),
+      settingsSkiMode: document.getElementById("mariageSettingsSkiMode"),
+      settingsRepaintMode: document.getElementById("mariageSettingsRepaintMode"),
+      settingsExact555: document.getElementById("mariageSettingsExact555"),
+      settingsLocked: document.getElementById("mariageSettingsLocked"),
+      settingsClose: document.getElementById("mariageSettingsCloseButton"),
+      settingsSave: document.getElementById("mariageSettingsSaveButton"),
       editButton: document.getElementById("mariageEditButton"),
       editToolbar: document.getElementById("mariageEditToolbar"),
       editError: document.getElementById("mariageEditError"),
@@ -752,6 +826,7 @@
     let orderDialogOpen = false;
     let selectedResultPlayerId = null;
     let replayPreviousFocus = null;
+    let settingsPreviousFocus = null;
     let editDraft = null;
     let editDirty = false;
     let confirmAction = null;
@@ -816,6 +891,7 @@
         startedAt: new Date().toISOString(),
         skiMode: selectedValue("mariageSkiMode"),
         repaintMode: selectedValue("mariageRepaintMode"),
+        exact555Reset: document.getElementById("mariageExact555Reset").checked,
         players: names.map(function (input, index) {
           return { id: `p${index + 1}`, name: input.value.trim().slice(0, 10) };
         })
@@ -827,7 +903,9 @@
     function continueGame() {
       state = load();
       if (state) {
+        normalizeGameRules(state);
         if (!isSupportedPlayerCount(state.playerCount)) {
+          persist();
           selectedResultPlayerId = null;
           showGame();
           return;
@@ -864,6 +942,65 @@
     function showGame() {
       navigate(screens.MARIAGE_GAME);
       render();
+    }
+
+    function rulesAreLocked(game) {
+      if (!game) return true;
+      if (game.rounds.length > 0) return true;
+      return Boolean(game.activeRound && getResolvedPlayerIds(game.activeRound).length > 0);
+    }
+
+    function closeSettings() {
+      elements.settingsDialog.classList.add("hidden");
+      elements.settingsDialog.setAttribute("aria-hidden", "true");
+      if (settingsPreviousFocus) settingsPreviousFocus.focus();
+      settingsPreviousFocus = null;
+    }
+
+    function openSettings() {
+      if (!state || editDraft) return;
+      const locked = rulesAreLocked(state);
+      settingsPreviousFocus = document.activeElement;
+      elements.settingsSkiMode.value = state.rules.skiMode;
+      elements.settingsRepaintMode.value = state.rules.repaint.penaltyMode;
+      elements.settingsExact555.checked = state.rules.exact555Reset;
+      [elements.settingsSkiMode, elements.settingsRepaintMode, elements.settingsExact555].forEach(function (control) {
+        control.disabled = locked;
+      });
+      elements.settingsLocked.classList.toggle("hidden", !locked);
+      elements.settingsSave.classList.toggle("hidden", locked);
+      elements.settingsDialog.classList.remove("hidden");
+      elements.settingsDialog.setAttribute("aria-hidden", "false");
+      (locked ? elements.settingsClose : elements.settingsSkiMode).focus();
+    }
+
+    function saveSettings() {
+      if (!state || editDraft || rulesAreLocked(state)) return;
+      const rules = createRules({
+        rules: {
+          profileId: "custom",
+          skiMode: elements.settingsSkiMode.value,
+          repaint: {
+            penaltyMode: elements.settingsRepaintMode.value,
+            awardMode: CONFIG.defaultRules.repaint.awardMode
+          },
+          exact555Reset: elements.settingsExact555.checked
+        }
+      });
+      if (!isValidRules(rules)) {
+        setMessage("Некоректні налаштування правил.");
+        return;
+      }
+      state.rules = rules;
+      normalizeGameRules(state);
+      persist();
+      closeSettings();
+      render();
+    }
+
+    function openEditFromSettings() {
+      closeSettings();
+      enterEditMode();
     }
 
     function setMessage(message) {
@@ -1154,6 +1291,25 @@
       render();
     }
 
+    function requestReorder() {
+      if (editDraft || !canReorderCurrentRound(state)) return;
+      showEditConfirm("Перезаказати поточний раунд?", "Поточний заказ буде скасовано.", "Скасувати", "Перезаказати", function () {
+        try {
+          reorderCurrentRound(state);
+          draftOrderingPlayerId = null;
+          selectedResultPlayerId = null;
+          orderDialogOpen = true;
+          elements.orderPoints.value = "";
+          elements.actualPoints.value = "";
+          setMessage("");
+          persist();
+          render();
+        } catch (error) {
+          setMessage(error.message);
+        }
+      });
+    }
+
     function selectResultPlayer(playerId) {
       if (editDraft || state.status === "completed") return;
       if (!state.activeRound.results[playerId]) {
@@ -1295,37 +1451,11 @@
     }
 
     function appendResultContent(cell, result) {
-      const presentation = getPresentation(result, state.settings);
-      if (!presentation) {
-        cell.textContent = "--";
-        return;
-      }
-      const fallback = document.createElement("span");
-      fallback.textContent = presentation.fallback;
-      cell.appendChild(fallback);
-      if (presentation.asset) {
-        const image = document.createElement("img");
-        image.className = "mariage-result-icon hidden";
-        image.alt = presentation.fallback;
-        image.addEventListener("load", function () { image.classList.remove("hidden"); fallback.classList.add("hidden"); });
-        image.addEventListener("error", function () { image.remove(); });
-        image.src = presentation.asset;
-        cell.appendChild(image);
-      }
+      STATUS_ICONS.renderStatus(cell, getPresentation(result, state.rules));
     }
 
     function appendBarrelContent(cell, presentation) {
-      const icon = document.createElement("span");
-      const image = document.createElement("img");
-      const label = presentation.active ? "Бочка" : "Попередня Бочка";
-      icon.className = `mariage-barrel-icon mariage-barrel-icon--${presentation.active ? "active" : "inactive"}`;
-      icon.setAttribute("role", "img");
-      icon.setAttribute("aria-label", label);
-      icon.title = label;
-      image.src = presentation.asset;
-      image.alt = "";
-      icon.appendChild(image);
-      cell.appendChild(icon);
+      STATUS_ICONS.renderBarrel(cell, presentation);
     }
 
     function renderEditInputRow(body, round, displayState) {
@@ -1444,7 +1574,9 @@
       const round = viewState.activeRound;
       const editing = Boolean(editDraft);
       elements.actionPanel.classList.toggle("hidden", editing);
+      elements.reorder.classList.toggle("hidden", editing || !canReorderCurrentRound(viewState));
       elements.editToolbar.classList.toggle("hidden", !editing);
+      elements.settingsButton.disabled = editing;
       elements.editButton.classList.toggle("active", editing);
       elements.editButton.classList.toggle("hidden", !isSupportedPlayerCount(state.playerCount));
       elements.editButton.disabled = editing;
@@ -1539,6 +1671,7 @@
     document.getElementById("mariageConfirmOrderButton").addEventListener("click", confirmOrder);
     document.getElementById("mariageCancelOrderButton").addEventListener("click", cancelOrder);
     document.getElementById("mariageTakenButton").addEventListener("click", beginResults);
+    elements.reorder.addEventListener("click", requestReorder);
     document.getElementById("mariageRepaintButton").addEventListener("click", repaintRound);
     document.getElementById("mariageResultRepaintButton").addEventListener("click", repaintRound);
     elements.replay.addEventListener("click", openReplayDialog);
@@ -1551,7 +1684,10 @@
     document.getElementById("mariageBiteSkiButton").addEventListener("click", function () { enterQuick("bite-ski"); });
     document.getElementById("mariageSkiButton").addEventListener("click", function () { enterQuick("ski"); });
     document.getElementById("mariageResultBackButton").addEventListener("click", closeResultPlayer);
-    elements.editButton.addEventListener("click", enterEditMode);
+    elements.settingsButton.addEventListener("click", openSettings);
+    elements.settingsClose.addEventListener("click", closeSettings);
+    elements.settingsSave.addEventListener("click", saveSettings);
+    elements.editButton.addEventListener("click", openEditFromSettings);
     elements.editDiscard.addEventListener("click", discardEditMode);
     elements.editApply.addEventListener("click", requestApplyEdits);
     elements.editConfirmNo.addEventListener("click", closeEditConfirm);
@@ -1582,9 +1718,15 @@
     getMaximumPoints,
     createPlayerCycleState,
     createBarrelState,
+    createRules,
+    isValidRules,
+    normalizeGameRules,
     createGame,
     createRound,
     getDealer,
+    hasRoundResultEntryStarted,
+    canReorderCurrentRound,
+    reorderCurrentRound,
     replayLatestRound,
     applySki,
     applyRepaint,
@@ -1603,6 +1745,7 @@
     getBarrelCandidates,
     buildBarrelEntryOrder,
     processBarrelTransitions,
+    applyPostRoundScoreRules,
     getRoundPrimary,
     recalculateMariageGame,
     getPresentation,

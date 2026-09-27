@@ -1,11 +1,19 @@
+@font-face {
+  font-family: 'MainTxt';
+  src: url(/assets/fonts/main-txt.woff) format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg: #f4f6f8;
   --panel: #ffffff;
   --panel-soft: #eef4f7;
   --line: #032344;
   --line-strong: #8ea0b3;
-  --text: #1f2a37;
-  --muted: #65758a;
+  --text: #030447;
+  --muted: #053e89;
   --accent: #176b87;
   --accent-strong: rgb(15, 83, 105);
   --accent-soft: #d9eef4;
@@ -13,6 +21,7 @@
   --success: #157f3f;
   --inactive: #eef0f2;
   --shadow: 0 18px 55px rgba(31, 42, 55, 0.12);
+  --main-txt-color: #00013f;
 }
 
 * {
@@ -33,6 +42,7 @@ body {
     linear-gradient(315deg, rgba(255, 217, 0, 0.9), transparent 55%),
     var(--bg);
   font-family: Arial, Helvetica, sans-serif;
+  font-family: 'MainTxt', sans-serif;
 }
 
 body.modal-open {
@@ -57,7 +67,7 @@ button:disabled {
 }
 
 .app-shell {
-  width: min(1180px, 100%);
+  width: min(800px, 100%);
   margin: 0 auto;
   padding: 7px;
 }
@@ -84,20 +94,25 @@ button:disabled {
   text-align: center;
 }
 
+.title-game-neme{
+  font-size: 45px;
+}
+
 .game-registry,
 .menu-actions {
   display: grid;
   gap: 12px;
 }
 
-.game-registry {
+/* .game-registry {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
+} */
+
 
 .game-entry {
   display: grid;
   gap: 6px;
-  min-height: 90px;
+  min-height: 75px;
   padding: 10px;
   border: 1px solid var(--line-strong);
   border-radius: 5px;
@@ -109,13 +124,13 @@ button:disabled {
 }
 
 .game-entry strong {
-  font-size: 1.7rem;
+  font-size: 1.9rem;
 }
 
 .game-entry span,
 .menu-actions button span {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -133,12 +148,12 @@ button:disabled {
 }
 
 .menu-actions {
-  width: min(420px, 100%);
+  width: min(180px, 100%);
   margin: 0 auto;
 }
 
 .menu-actions button {
-  min-height: 52px;
+  min-height: 40px;
 }
 
 .menu-actions button span {
@@ -221,6 +236,36 @@ button:disabled {
   object-fit: contain;
 }
 
+.mariage-status-icon {
+  position: relative;
+  display: inline-grid;
+  min-width: 28px;
+  min-height: 28px;
+  place-items: center;
+  vertical-align: middle;
+}
+
+.mariage-status-fallback {
+  line-height: 1;
+}
+
+.mariage-status-badge {
+  position: absolute;
+  right: -7px;
+  bottom: -5px;
+  display: grid;
+  min-width: 17px;
+  height: 17px;
+  place-items: center;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .mariage-barrel-icon {
   position: relative;
   display: inline-grid;
@@ -256,6 +301,56 @@ button:disabled {
   background: #8f1d1d;
   content: "";
   transform: rotate(-42deg);
+}
+
+.mariage-settings-dialog {
+  width: min(460px, 100%);
+}
+
+.mariage-settings-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.mariage-settings-section h3 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.mariage-settings-section > label {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+.mariage-settings-section select {
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.mariage-settings-section .mariage-settings-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mariage-settings-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mariage-settings-edit img {
+  width: 22px;
+  height: 22px;
 }
 
 .pending-order-score {
@@ -477,14 +572,14 @@ input:focus-visible {
   display: block;
   margin-bottom: 5px;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 h1 {
-  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
   line-height: 1.05;
 }
 
@@ -578,9 +673,9 @@ h1 {
 
 .primary-button,
 .secondary-button {
-  padding: 6px 20px;
+  padding: 7px 10px;
   border-radius: 5px;
-  font-size: 18px;
+  font-size: 25px;
   font-weight: 800;
 }
 
@@ -595,7 +690,6 @@ h1 {
 }
 
 .primary-button {
-  font-size: 20px;
   color: #fff;
   background: var(--accent);
   border: 1px solid var(--accent);
@@ -974,8 +1068,8 @@ h1 {
 
 .icon-button {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: 35px;
+  height: 35px;
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid var(--line-strong);
@@ -1065,7 +1159,7 @@ h1 {
 }
 
 .value-button {
-  min-width: 58px;
+  /* min-width: 58px; */
   min-height: 52px;
   border: 1px solid var(--line-strong);
   border-radius: 5px;
@@ -1189,9 +1283,9 @@ h1 {
 }
 
 @media (max-width: 520px) {
-  .game-registry {
+  /* .game-registry {
     grid-template-columns: 1fr;
-  }
+  } */
 
   .mariage-entry-row {
     align-items: stretch;
