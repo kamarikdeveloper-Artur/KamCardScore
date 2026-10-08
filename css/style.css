@@ -259,9 +259,10 @@ button:disabled {
   overflow: hidden;
   place-items: center;
   vertical-align: middle;
+  /* justify-items: end; */
 }
 
-.mariage-result--exact555::before {
+/* .mariage-result--exact555::before {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -276,6 +277,24 @@ button:disabled {
   opacity: 0.35;
   pointer-events: none;
   transform: translate(8px, 2px);
+} */
+
+.mariage-result--exact555::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  content: "";
+  background-image: url("/assets/icons/icon-arrow-down.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+  pointer-events: none;
+  transform: translate(10px, 0px);
 }
 
 .mariage-result--exact555 .mariage-result-value {

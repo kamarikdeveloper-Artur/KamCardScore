@@ -2,14 +2,20 @@
   "use strict";
 
   const REGISTRY = Object.freeze({
-    success: Object.freeze({ fallback: "✅", asset: null }),
+    success: Object.freeze({
+      fallback: "OK",
+      asset: "assets/icons/icon-checked.svg",
+    }),
     bite: Object.freeze({ fallback: "Б", asset: null }),
     biteSki: Object.freeze({ fallback: "Б+Л", asset: null }),
     ski: Object.freeze({ fallback: "Л", asset: null }),
     repaint: Object.freeze({ fallback: "Р", asset: null }),
     repaintBeneficiary: Object.freeze({ fallback: "+", asset: null }),
     exact555Reset: Object.freeze({ fallback: "555", asset: null }),
-    barrel: Object.freeze({ fallback: "Бч", asset: "assets/icons/icon_barrel.svg" })
+    barrel: Object.freeze({
+      fallback: "Бч",
+      asset: "assets/icons/icon_barrel.svg",
+    }),
   });
 
   function describeResult(result, rules, context) {
@@ -17,29 +23,56 @@
     if (!result) return { type: "empty", text: "--" };
     if (presentation.exact555Reset) {
       return {
-        type: "exact555Reset", semantic: "exact555Reset", text: "555",
-        label: "Рівно 555 — рахунок скинуто до 0", ...REGISTRY.exact555Reset
+        type: "exact555Reset",
+        semantic: "exact555Reset",
+        text: "555",
+        label: "Рівно 555 — рахунок скинуто до 0",
+        ...REGISTRY.exact555Reset,
       };
     }
     if (result.semantic.repaintBeneficiary) {
       const amount = Number(result.delta);
-      const fallback = Number.isFinite(amount) ? `${amount >= 0 ? "+" : ""}${amount}` : REGISTRY.repaintBeneficiary.fallback;
-      return { type: "semantic", semantic: "repaintBeneficiary", ...REGISTRY.repaintBeneficiary, fallback };
+      const fallback = Number.isFinite(amount)
+        ? `${amount >= 0 ? "+" : ""}${amount}`
+        : REGISTRY.repaintBeneficiary.fallback;
+      return {
+        type: "semantic",
+        semantic: "repaintBeneficiary",
+        ...REGISTRY.repaintBeneficiary,
+        fallback,
+      };
     }
     if (result.semantic.repaint) {
-      return { type: "semantic", semantic: "repaint", ...REGISTRY.repaint,
-        badge: rules.repaint.penaltyMode === "three" ? result.repaintCycleNumber : null };
+      return {
+        type: "semantic",
+        semantic: "repaint",
+        ...REGISTRY.repaint,
+        badge:
+          rules.repaint.penaltyMode === "three"
+            ? result.repaintCycleNumber
+            : null,
+      };
     }
     if (result.semantic.bite && result.semantic.ski) {
-      return { type: "semantic", semantic: "biteSki", ...REGISTRY.biteSki,
-        badge: rules.skiMode === "three" ? result.skiCycleNumber : null };
+      return {
+        type: "semantic",
+        semantic: "biteSki",
+        ...REGISTRY.biteSki,
+        badge: rules.skiMode === "three" ? result.skiCycleNumber : null,
+      };
     }
-    if (result.semantic.bite) return { type: "semantic", semantic: "bite", ...REGISTRY.bite };
+    if (result.semantic.bite)
+      return { type: "semantic", semantic: "bite", ...REGISTRY.bite };
     if (result.semantic.ski) {
-      return { type: "semantic", semantic: "ski", ...REGISTRY.ski,
-        badge: rules.skiMode === "three" ? result.skiCycleNumber : null };
+      return {
+        type: "semantic",
+        semantic: "ski",
+        ...REGISTRY.ski,
+        badge: rules.skiMode === "three" ? result.skiCycleNumber : null,
+      };
     }
-    if (result.semantic.success) return { type: "semantic", semantic: "success", ...REGISTRY.success };
+    if (result.semantic.success)
+      return { type: "semantic", semantic: "success", ...REGISTRY.success };
     if (result.actualPoints !== null && result.actualPoints !== undefined) {
       return { type: "factual", text: String(result.actualPoints) };
     }
@@ -47,12 +80,19 @@
   }
 
   function describeBarrel(active) {
-    return { type: "barrel", semantic: "barrel", active: Boolean(active), ...REGISTRY.barrel };
+    return {
+      type: "barrel",
+      semantic: "barrel",
+      active: Boolean(active),
+      ...REGISTRY.barrel,
+    };
   }
 
   function describeCell(options) {
     if (options.barrel) return options.barrel;
-    return describeResult(options.result, options.rules, { exact555Reset: options.exact555Reset });
+    return describeResult(options.result, options.rules, {
+      exact555Reset: options.exact555Reset,
+    });
   }
 
   function appendBadge(container, badge) {
@@ -100,7 +140,9 @@
         image.classList.remove("hidden");
         fallback.classList.add("hidden");
       });
-      image.addEventListener("error", function () { image.remove(); });
+      image.addEventListener("error", function () {
+        image.remove();
+      });
       image.src = descriptor.asset;
       container.appendChild(image);
     }
@@ -124,7 +166,9 @@
       image.classList.remove("hidden");
       fallback.classList.add("hidden");
     });
-    image.addEventListener("error", function () { image.remove(); });
+    image.addEventListener("error", function () {
+      image.remove();
+    });
     icon.appendChild(image);
     cell.appendChild(icon);
   }
@@ -141,6 +185,6 @@
     describeCell,
     renderStatus,
     renderBarrel,
-    renderCell
+    renderCell,
   });
 })();
