@@ -134,6 +134,8 @@
         `<label for="playerName${index + 1}">Гравець ${index + 1}</label>`,
         `<input id="playerName${index + 1}" type="text" maxlength="10" value="Гравець ${index + 1}">`
       ].join("");
+      const input = wrapper.querySelector("input");
+      input.addEventListener("focus", function () { input.select(); });
       playerNameFields.appendChild(wrapper);
     }
   }

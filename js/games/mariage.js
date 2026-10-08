@@ -3,6 +3,7 @@
 
   const CONFIG = window.MARIAGE_CONFIG;
   const STATUS_ICONS = window.MariageStatusIcons;
+  const HELP = window.MariageHelp;
   if (!CONFIG) throw new Error("Mariage rules configuration is unavailable");
   if (!STATUS_ICONS) throw new Error("Mariage status icon system is unavailable");
   const GAME_TYPE = "mariage";
@@ -413,11 +414,18 @@
     return resolvePlayerResult(state, player.id, actualPoints, quickAction);
   }
 
-  function resolveRepaint(state) {
+  function resolveRepaint(state, earlyOrderingPlayerId) {
     if (state.status === "completed") throw new Error("Mariage game is completed");
     const round = state.activeRound;
-    if (!round || !["physical-play", "results"].includes(round.phase) || !round.orderingPlayerId) {
+    const isEarlyRepaint = Boolean(round && round.phase === "ordering-player" && earlyOrderingPlayerId);
+    if (isEarlyRepaint && !getPlayer(state, earlyOrderingPlayerId)) throw new Error("Unknown Mariage player");
+    if (!round || !["ordering-player", "physical-play", "results"].includes(round.phase) ||
+      (!round.orderingPlayerId && !isEarlyRepaint)) {
       throw new Error("Repaint is unavailable");
+    }
+    if (isEarlyRepaint) {
+      round.orderingPlayerId = earlyOrderingPlayerId;
+      round.orderPoints = null;
     }
     if (round.phase === "results" && getResolvedPlayerIds(round).length) {
       restoreRoundStart(state, round);
@@ -662,25 +670,30 @@
       round.id = original.id;
       round.completedAt = original.completedAt || null;
       rebuilt.activeRound = round;
-      const hasOrder = original.orderingPlayerId !== null || original.orderPoints !== null;
-      if (hasOrder) {
-        if (!playerIds.includes(original.orderingPlayerId) ||
-          !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints)) {
-          throw new Error(`Некоректний заказ у раунді ${original.sequence}.`);
-        }
-        round.orderingPlayerId = original.orderingPlayerId;
-        round.orderPoints = original.orderPoints;
-      } else if (completed || Object.keys(primary.actuals).length || primary.orderingResult !== null || primary.orderingActualPoints !== null) {
-        throw new Error(`Не вказано заказ у раунді ${original.sequence}.`);
-      }
       round.primary = JSON.parse(JSON.stringify(primary));
       if (primary.resolution === "repaint") {
-        if (!hasOrder || !completed) {
+        const hasOrderingPlayer = playerIds.includes(original.orderingPlayerId);
+        const hasConfirmedOrder = original.orderPoints !== null && original.orderPoints !== undefined;
+        if (!hasOrderingPlayer || !completed ||
+          (hasConfirmedOrder && !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints))) {
           throw new Error(`Некоректний розпис у раунді ${original.sequence}.`);
         }
+        round.orderingPlayerId = original.orderingPlayerId;
+        round.orderPoints = hasConfirmedOrder ? original.orderPoints : null;
         round.phase = "physical-play";
         resolveRepaint(rebuilt);
       } else {
+        const hasOrder = original.orderingPlayerId !== null || original.orderPoints !== null;
+        if (hasOrder) {
+          if (!playerIds.includes(original.orderingPlayerId) ||
+            !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints)) {
+            throw new Error(`Некоректний заказ у раунді ${original.sequence}.`);
+          }
+          round.orderingPlayerId = original.orderingPlayerId;
+          round.orderPoints = original.orderPoints;
+        } else if (completed || Object.keys(primary.actuals).length || primary.orderingResult !== null || primary.orderingActualPoints !== null) {
+          throw new Error(`Не вказано заказ у раунді ${original.sequence}.`);
+        }
         const inputIds = Object.keys(primary.actuals);
         const validOrderingResult = [null, "taken", "bite", "bite_ski"].includes(primary.orderingResult);
         if (!validOrderingResult || inputIds.some(function (id) { return !playerIds.includes(id) || id === round.orderingPlayerId; }) ||
@@ -806,6 +819,7 @@
       orderingPlayers: document.getElementById("mariageOrderingPlayers"),
       orderPointsStep: document.getElementById("mariageOrderPointsStep"),
       orderPoints: document.getElementById("mariageOrderPoints"),
+      earlyRepaint: document.getElementById("mariageEarlyRepaintButton"),
       playStep: document.getElementById("mariagePlayStep"),
       resultStep: document.getElementById("mariageResultStep"),
       factualStep: document.getElementById("mariageFactualStep"),
@@ -828,7 +842,20 @@
       finalWinnerScore: document.getElementById("mariageFinalWinnerScore"),
       finalStandings: document.getElementById("mariageFinalStandings"),
       finalReplay: document.getElementById("mariageFinalReplayButton"),
-      finalClose: document.getElementById("mariageFinalCloseButton")
+      finalClose: document.getElementById("mariageFinalCloseButton"),
+      helpDialog: document.getElementById("mariageHelpDialog"),
+      helpTitle: document.getElementById("mariageHelpTitle"),
+      helpShortText: document.getElementById("mariageHelpShortText"),
+      helpParagraphs: document.getElementById("mariageHelpParagraphs"),
+      helpExampleSection: document.getElementById("mariageHelpExampleSection"),
+      helpExample: document.getElementById("mariageHelpExample"),
+      helpIconClose: document.getElementById("mariageHelpIconClose"),
+      helpClose: document.getElementById("mariageHelpCloseButton")
+    };
+    const helpStore = HELP ? HELP.createStore() : {
+      get: function () {
+        return Promise.resolve({ title: "Довідка", shortText: "Опис правила ще не додано.", paragraphs: [], example: "" });
+      }
     };
     let state = null;
     let draftOrderingPlayerId = null;
@@ -843,6 +870,7 @@
     let lastTouch = { key: null, at: 0 };
     let lastTouchActivationAt = 0;
     let dismissedFinalResultsGameId = null;
+    let helpPreviousFocus = null;
 
     function load() {
       const saved = storage.loadGameByType(GAME_TYPE);
@@ -851,6 +879,36 @@
 
     function persist() {
       if (state && !editDraft) storage.saveGameByType(GAME_TYPE, state);
+    }
+
+    function closeHelp() {
+      elements.helpDialog.classList.add("hidden");
+      elements.helpDialog.setAttribute("aria-hidden", "true");
+      if (helpPreviousFocus) helpPreviousFocus.focus();
+      helpPreviousFocus = null;
+    }
+
+    function renderHelpEntry(entry) {
+      elements.helpTitle.textContent = entry.title;
+      elements.helpShortText.textContent = entry.shortText;
+      elements.helpParagraphs.replaceChildren();
+      entry.paragraphs.forEach(function (text) {
+        const paragraph = document.createElement("p");
+        paragraph.textContent = text;
+        elements.helpParagraphs.appendChild(paragraph);
+      });
+      elements.helpExample.textContent = entry.example;
+      elements.helpExampleSection.classList.toggle("hidden", !entry.example);
+    }
+
+    function openHelp(key) {
+      helpPreviousFocus = document.activeElement;
+      return helpStore.get(key).then(function (entry) {
+        renderHelpEntry(entry);
+        elements.helpDialog.classList.remove("hidden");
+        elements.helpDialog.setAttribute("aria-hidden", "false");
+        elements.helpClose.focus();
+      });
     }
 
     function selectedValue(name) {
@@ -872,6 +930,7 @@
         input.type = "text";
         input.maxLength = 10;
         input.value = existing[index] || `Гравець ${index + 1}`;
+        input.addEventListener("focus", function () { input.select(); });
         wrapper.append(label, input);
         elements.setupNames.appendChild(wrapper);
       }
@@ -1296,8 +1355,10 @@
     function selectOrderingPlayer(playerId) {
       if (editDraft || state.status === "completed") return;
       draftOrderingPlayerId = playerId;
+      elements.orderPoints.value = String(getMinimumOrder(state, playerId));
       render();
       elements.orderPoints.focus();
+      elements.orderPoints.select();
     }
 
     function cancelOrder() {
@@ -1333,6 +1394,22 @@
       setMessage("");
       persist();
       render();
+    }
+
+    function earlyRepaintRound() {
+      if (editDraft || state.status === "completed" || !draftOrderingPlayerId) return;
+      try {
+        resolveRepaint(state, draftOrderingPlayerId);
+        draftOrderingPlayerId = null;
+        orderDialogOpen = false;
+        selectedResultPlayerId = null;
+        elements.orderPoints.value = "";
+        setMessage("");
+        persist();
+        render();
+      } catch (error) {
+        setMessage(error.message);
+      }
     }
 
     function beginResults() {
@@ -1527,7 +1604,7 @@
       const orderingPlayer = displayState.players.find(function (player) { return player.id === round.orderingPlayerId; });
       if (orderingPlayer) {
         addValue(`Заказує: ${orderingPlayer.name}`, "player");
-        addValue(`Заказ: ${round.orderPoints}`, "order");
+        if (round.orderPoints !== null) addValue(`Заказ: ${round.orderPoints}`, "order");
       }
       if (displayState.rounds.includes(round)) {
         addValue(`Результат: ${round.primary.resolution === "repaint" ? "Розпис" : "Взято"}`, "resolution");
@@ -1727,6 +1804,7 @@
     document.getElementById("mariageGameNewButton").addEventListener("click", requestNewGame);
     elements.newRound.addEventListener("click", beginRound);
     document.getElementById("mariageConfirmOrderButton").addEventListener("click", confirmOrder);
+    elements.earlyRepaint.addEventListener("click", earlyRepaintRound);
     document.getElementById("mariageCancelOrderButton").addEventListener("click", cancelOrder);
     document.getElementById("mariageTakenButton").addEventListener("click", beginResults);
     elements.reorder.addEventListener("click", requestReorder);
@@ -1761,6 +1839,18 @@
     });
     elements.valueCancel.addEventListener("click", closeValueEditor);
     elements.valueSave.addEventListener("click", saveValueEdit);
+    document.querySelectorAll("[data-mariage-help]").forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openHelp(button.dataset.mariageHelp);
+      });
+    });
+    elements.helpIconClose.addEventListener("click", closeHelp);
+    elements.helpClose.addEventListener("click", closeHelp);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && !elements.helpDialog.classList.contains("hidden")) closeHelp();
+    });
     renderNameFields();
 
     return { showMenu, continueGame, requestNewGame };

@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v14`;
+const CACHE_NAME = `${CACHE_PREFIX}v15`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -11,42 +11,59 @@ const APP_SHELL = [
   "./js/games/poker.js",
   "./js/games/mariage-config.js",
   "./js/games/mariage-icons.js",
+  "./js/games/mariage-help.js",
   "./js/games/mariage.js",
   "./js/app.js",
-  "./assets/backgrounds/bg_games.png",
+  "./data/mariage-help.uk.json",
+  "./assets/backgrounds/img-bg-main.png",
   "./assets/suits/spades.svg",
   "./assets/suits/hearts.svg",
   "./assets/suits/clubs.svg",
   "./assets/suits/diamonds.svg",
-  "./assets/icons/icon-192.png",
-  "./assets/icons/icon-512.png",
+  "./assets/icons/img-app-192.png",
+  "./assets/icons/img-app-512.png",
   "./assets/icons/icon_barrel.svg",
-  "./assets/icons/edit-table.svg"
+  "./assets/icons/icon-edit-table.svg",
 ];
 const INDEX_URL = new URL("./index.html", self.registration.scope).href;
 const ROOT_URL = new URL("./", self.registration.scope).href;
-const APP_SHELL_URLS = new Set(APP_SHELL.map(function (path) {
-  return new URL(path, self.registration.scope).href;
-}));
+const APP_SHELL_URLS = new Set(
+  APP_SHELL.map(function (path) {
+    return new URL(path, self.registration.scope).href;
+  }),
+);
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function (cache) { return cache.addAll(APP_SHELL); })
-      .then(function () { return self.skipWaiting(); })
+    caches
+      .open(CACHE_NAME)
+      .then(function (cache) {
+        return cache.addAll(APP_SHELL);
+      })
+      .then(function () {
+        return self.skipWaiting();
+      }),
   );
 });
 
 self.addEventListener("activate", function (event) {
   event.waitUntil(
-    caches.keys()
+    caches
+      .keys()
       .then(function (cacheNames) {
-        return Promise.all(cacheNames.map(function (cacheName) {
-          const isObsoleteCardScoreCache = cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME;
-          return isObsoleteCardScoreCache ? caches.delete(cacheName) : Promise.resolve(false);
-        }));
+        return Promise.all(
+          cacheNames.map(function (cacheName) {
+            const isObsoleteCardScoreCache =
+              cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME;
+            return isObsoleteCardScoreCache
+              ? caches.delete(cacheName)
+              : Promise.resolve(false);
+          }),
+        );
       })
-      .then(function () { return self.clients.claim(); })
+      .then(function () {
+        return self.clients.claim();
+      }),
   );
 });
 
@@ -64,11 +81,15 @@ self.addEventListener("fetch", function (event) {
         .then(function (response) {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then(function (cache) { return cache.put(INDEX_URL, copy); });
+            caches.open(CACHE_NAME).then(function (cache) {
+              return cache.put(INDEX_URL, copy);
+            });
           }
           return response;
         })
-        .catch(function () { return caches.match(INDEX_URL); })
+        .catch(function () {
+          return caches.match(INDEX_URL);
+        }),
     );
     return;
   }
@@ -82,11 +103,15 @@ self.addEventListener("fetch", function (event) {
         .then(function (response) {
           if (response.ok) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then(function (cache) { return cache.put(request, copy); });
+            caches.open(CACHE_NAME).then(function (cache) {
+              return cache.put(request, copy);
+            });
           }
           return response;
         })
-        .catch(function () { return Response.error(); });
-    })
+        .catch(function () {
+          return Response.error();
+        });
+    }),
   );
 });
