@@ -9,7 +9,10 @@
     bite: Object.freeze({ fallback: "Б", asset: null }),
     biteSki: Object.freeze({ fallback: "Б+Л", asset: null }),
     ski: Object.freeze({ fallback: "Л", asset: null }),
-    repaint: Object.freeze({ fallback: "Р", asset: null }),
+    repaint: Object.freeze({
+      fallback: "Р",
+      asset: "assets/icons/icon-edit-table.svg",
+    }),
     repaintBeneficiary: Object.freeze({ fallback: "+", asset: null }),
     exact555Reset: Object.freeze({ fallback: "555", asset: null }),
     barrel: Object.freeze({

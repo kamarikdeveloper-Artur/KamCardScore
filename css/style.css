@@ -259,25 +259,7 @@ button:disabled {
   overflow: hidden;
   place-items: center;
   vertical-align: middle;
-  /* justify-items: end; */
 }
-
-/* .mariage-result--exact555::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: grid;
-  place-items: center;
-  color: #b42318;
-  content: "↓";
-  font-family: sans-serif;
-  font-size: 2.25rem;
-  font-weight: 900;
-  line-height: 1;
-  opacity: 0.35;
-  pointer-events: none;
-  transform: translate(8px, 2px);
-} */
 
 .mariage-result--exact555::before {
   position: absolute;
@@ -310,17 +292,12 @@ button:disabled {
 
 .mariage-status-badge {
   position: absolute;
-  right: -7px;
-  bottom: -5px;
+  right: -8px;
+  bottom: 0px;
   display: grid;
-  min-width: 17px;
-  height: 17px;
   place-items: center;
-  border: 1px solid #fff;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.68rem;
+  color: #ff0000;
+  font-size: 1.1rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -347,8 +324,7 @@ button:disabled {
 }
 
 .mariage-barrel-icon--inactive {
-  opacity: 0.52;
-  filter: grayscale(1);
+  opacity: 0.6;
 }
 
 .mariage-barrel-icon--inactive::after {
@@ -835,8 +811,8 @@ h1 {
 }
 
 #mariageSettingsButton img {
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
 }
 
 .status-strip {
