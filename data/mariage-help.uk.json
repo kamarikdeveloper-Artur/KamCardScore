@@ -1,0 +1,50 @@
+{
+  "ski": {
+    "title": "Лижа",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "bite": {
+    "title": "Байт",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "biteSki": {
+    "title": "Байт + Лижа",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "repaint": {
+    "title": "Розпис",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "barrel": {
+    "title": "Бочка",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "exact555": {
+    "title": "Правило 555",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "order": {
+    "title": "Заказ",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  },
+  "reorder": {
+    "title": "Перезаказати",
+    "shortText": "Опис правила буде додано пізніше.",
+    "paragraphs": [],
+    "example": ""
+  }
+}

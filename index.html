@@ -10,7 +10,8 @@
     <meta name="description" content="Нотатник балів - для карткових ігор" />
     <meta name="theme-color" content="#176b87" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./assets/icons/icon-app-192.png" />
+    <link rel="icon" href="./assets/icons/img-app-192.png" />
+    <link rel="apple-touch-icon" href="./assets/icons/img-app-192.png" />
     <link rel="stylesheet" href="css/style.css" />
     <script defer src="js/storage.js"></script>
     <script defer src="js/games/poker.js"></script>
@@ -776,11 +777,11 @@
             <span>2</span>
           </label>
           <label>
-            <input type="radio" name="playerCount" value="3" />
+            <input type="radio" name="playerCount" value="3" checked />
             <span>3</span>
           </label>
           <label>
-            <input type="radio" name="playerCount" value="4" checked />
+            <input type="radio" name="playerCount" value="4" />
             <span>4</span>
           </label>
         </fieldset>
@@ -909,6 +910,10 @@
                 >Заказ взяток</span
               >
               <strong id="numberPickerPlayer">Гравець 1</strong>
+              <p
+                class="number-picker-order-context hidden"
+                id="numberPickerOrderContext"
+              ></p>
               <p class="hint" id="numberPickerHint"></p>
             </div>
             <button

@@ -1,11 +1,3 @@
-/* @font-face {
-  font-family: "MainTxt";
-  src: url(/assets/fonts/main-txt.woff) format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-} */
-
 :root {
   --bg: #f4f6f8;
   --panel: #ffffff;
@@ -105,10 +97,6 @@ button:disabled {
   display: grid;
   gap: 12px;
 }
-
-/* .game-registry {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-} */
 
 .game-entry {
   display: grid;
@@ -297,7 +285,7 @@ button:disabled {
   display: grid;
   place-items: center;
   color: #ff0000;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -458,7 +446,7 @@ button:disabled {
 }
 
 .completed-cycle {
-  opacity: 0.48;
+  opacity: 0.4;
   text-decoration: line-through;
 }
 
@@ -924,6 +912,13 @@ h1 {
   padding: 0 0 10px;
 }
 
+.table-wrap::after {
+  display: block;
+  height: clamp(260px, calc(75dvh - 30px), 700px);
+  content: "";
+  pointer-events: none;
+}
+
 #gamePanel .table-wrap {
   padding-bottom: var(--round-order-status-clearance, 10px);
 }
@@ -1086,6 +1081,19 @@ h1 {
   font-size: 1rem;
 }
 
+.result-outcome--exact .result-value--exact,
+.ordered-value--target {
+  color: var(--success);
+}
+
+.actual-value--under {
+  color: var(--danger);
+}
+
+.actual-value--over {
+  color: var(--line-strong);
+}
+
 .result-split {
   position: relative;
   min-height: 35px;
@@ -1138,6 +1146,13 @@ h1 {
   margin: 6px 0 0;
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+.number-picker-order-context {
+  margin-top: 4px;
+  color: var(--success);
+  font-size: 0.95rem;
+  font-weight: 800;
 }
 
 .number-picker-overlay {

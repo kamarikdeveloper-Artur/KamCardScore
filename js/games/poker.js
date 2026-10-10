@@ -96,7 +96,7 @@
       name: "Лобіки",
       requiresOrder: true,
       usesPassStreakRule: true,
-      scoringType: "normal",
+      scoringType: "lobiky",
     }),
     temni: Object.freeze({
       keyPrefix: "dark",
@@ -993,6 +993,15 @@
     return actual;
   }
 
+  function calculateLobikyScore(ordered, actual) {
+    if (![0, 1].includes(ordered) || ![0, 1].includes(actual)) {
+      throw new Error("Invalid Lobiky result");
+    }
+
+    if (ordered === 0) return actual === 0 ? 10 : 2;
+    return actual === 1 ? 20 : -20;
+  }
+
   function calculateMinesScore(actual) {
     return actual === 0 ? 10 : actual * -20;
   }
@@ -1004,7 +1013,16 @@
   function calculateRoundScore(scoringType, ordered, actual) {
     if (scoringType === "mines") return calculateMinesScore(actual);
     if (scoringType === "golden") return calculateGoldenScore(actual);
+    if (scoringType === "lobiky")
+      return calculateLobikyScore(ordered, actual);
     return calculateScore(ordered, actual);
+  }
+
+  function getOrderedResultOutcome(ordered, actual) {
+    if (ordered === null || ordered === undefined) return null;
+    if (actual === null || actual === undefined) return null;
+    if (actual === ordered) return "exact";
+    return actual < ordered ? "under" : "over";
   }
 
   window.Poker = {
@@ -1075,8 +1093,10 @@
     getAllowedActualValues,
     isActualAllowed,
     calculateScore,
+    calculateLobikyScore,
     calculateMinesScore,
     calculateGoldenScore,
     calculateRoundScore,
+    getOrderedResultOutcome,
   };
 })();
