@@ -19,6 +19,7 @@
     <script defer src="js/games/mariage-icons.js"></script>
     <script defer src="js/games/mariage-help.js"></script>
     <script defer src="js/games/mariage.js"></script>
+    <script defer src="js/components/wheel-picker.js"></script>
     <script defer src="js/app.js"></script>
   </head>
   <body>
@@ -843,7 +844,11 @@
             <strong id="currentRoundLabel">1</strong>
           </div>
           <div>
-            <span class="status-label">Гравець</span>
+            <span class="status-label">Роздає:</span>
+            <strong id="currentDealerLabel">Гравець 1</strong>
+          </div>
+          <div>
+            <span class="status-label">Обов'язок</span>
             <strong id="activePlayerLabel">Гравець 1</strong>
           </div>
         </section>
@@ -914,7 +919,6 @@
                 class="number-picker-order-context hidden"
                 id="numberPickerOrderContext"
               ></p>
-              <p class="hint" id="numberPickerHint"></p>
             </div>
             <button
               class="icon-button"
@@ -937,19 +941,45 @@
               aria-label="Вибір гри"
             ></div>
           </div>
-          <span
-            class="status-label number-picker-values-label hidden"
-            id="numberPickerValuesLabel"
-            >Кількість взяток</span
+          <div
+            class="number-picker-player-section hidden"
+            id="numberPickerPlayerSection"
           >
-          <div class="modal-value-buttons" id="numberPickerValues"></div>
-          <button
-            class="secondary-button modal-cancel"
-            id="numberPickerCancelButton"
-            type="button"
-          >
-            Відмінити
-          </button>
+            <span class="status-label">Гравець</span>
+            <div
+              class="number-picker-players"
+              id="numberPickerPlayers"
+              role="group"
+              aria-label="Вибір гравця для фактичних взяток"
+            ></div>
+          </div>
+          <div class="wheel-picker-shell">
+            <div class="wheel-picker-center" aria-hidden="true"></div>
+            <div
+              class="wheel-picker-viewport"
+              id="numberPickerValues"
+              role="listbox"
+              aria-label="Кількість взяток"
+              tabindex="0"
+            ></div>
+          </div>
+          <div class="number-picker-actions">
+            <button
+              class="primary-button"
+              id="numberPickerConfirmButton"
+              type="button"
+              disabled
+            >
+              Підтвердити
+            </button>
+            <button
+              class="secondary-button"
+              id="numberPickerCancelButton"
+              type="button"
+            >
+              Закрити
+            </button>
+          </div>
         </div>
       </div>
 

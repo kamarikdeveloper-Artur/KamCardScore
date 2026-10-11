@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v16`;
+const CACHE_NAME = `${CACHE_PREFIX}v18`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,6 +13,7 @@ const APP_SHELL = [
   "./js/games/mariage-icons.js",
   "./js/games/mariage-help.js",
   "./js/games/mariage.js",
+  "./js/components/wheel-picker.js",
   "./js/app.js",
   "./data/mariage-help.uk.json",
   "./assets/backgrounds/img-bg-main.png",

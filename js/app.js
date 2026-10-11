@@ -40,6 +40,7 @@
   const resultsButton = document.getElementById("resultsButton");
   const scoreTable = document.getElementById("scoreTable");
   const currentRoundLabel = document.getElementById("currentRoundLabel");
+  const currentDealerLabel = document.getElementById("currentDealerLabel");
   const activePlayerLabel = document.getElementById("activePlayerLabel");
   const roundOrderStatusBar = document.getElementById("roundOrderStatusBar");
   const roundOrderStatus = document.getElementById("roundOrderStatus");
@@ -60,17 +61,20 @@
   const numberPickerOrderContext = document.getElementById(
     "numberPickerOrderContext",
   );
-  const numberPickerHint = document.getElementById("numberPickerHint");
   const numberPickerGameChoiceSection = document.getElementById(
     "numberPickerGameChoiceSection",
   );
   const numberPickerGameChoices = document.getElementById(
     "numberPickerGameChoices",
   );
-  const numberPickerValuesLabel = document.getElementById(
-    "numberPickerValuesLabel",
+  const numberPickerPlayerSection = document.getElementById(
+    "numberPickerPlayerSection",
   );
+  const numberPickerPlayers = document.getElementById("numberPickerPlayers");
   const numberPickerValues = document.getElementById("numberPickerValues");
+  const numberPickerConfirmButton = document.getElementById(
+    "numberPickerConfirmButton",
+  );
   const numberPickerCloseButton = document.getElementById(
     "numberPickerCloseButton",
   );
@@ -94,6 +98,11 @@
   let orderEditTurnIndex = null;
   let autoOpenedResultsGameId = null;
   let resultsPreviousFocus = null;
+  const wheelPicker = window.CardScoreWheelPicker.create({
+    viewport: numberPickerValues,
+    confirmButton: numberPickerConfirmButton,
+    cancelButton: numberPickerCancelButton,
+  });
 
   function syncRoundOrderStatusClearance() {
     if (roundOrderStatusBar.classList.contains("hidden")) {
@@ -898,6 +907,14 @@
     currentRoundLabel.textContent = currentRoundDescriptor
       ? `${currentRoundDescriptor.label}${currentGameChoice ? ` ${currentGameChoice.symbol}` : ""}`
       : "";
+    const dealerIndex = currentRoundDescriptor
+      ? poker.getDealerIndex(
+          currentRoundDescriptor.sequenceIndex,
+          gameState.playerCount,
+        )
+      : -1;
+    const dealer = gameState.players[dealerIndex];
+    currentDealerLabel.textContent = dealer ? dealer.name : "-";
 
     if (gameState.chronologyComplete) {
       activePlayerLabel.textContent = "Раунди завершено";
@@ -1209,6 +1226,23 @@
     ].join("");
   }
 
+  function getActualPlayerPickerOptions(inputPlayerIndex, descriptor) {
+    const roundData = getCurrentRoundData();
+    return getCurrentOrder().map(function (playerIndex) {
+      const player = gameState.players[playerIndex];
+      const result = roundData.results[player.id];
+      const isCurrentPlayer = playerIndex === inputPlayerIndex;
+
+      return {
+        name: player.name,
+        order: descriptor.requiresOrder ? result.ordered : null,
+        actual: result.actual,
+        selected: isCurrentPlayer,
+        selectable: isCurrentPlayer && result.actual === null,
+      };
+    });
+  }
+
   function getNumberPickerOptions() {
     const inputPlayer = getInputPlayer();
     const inputPlayerIndex = getInputPlayerIndex();
@@ -1234,25 +1268,11 @@
     const isLastPlayer = orderInputTurnIndex === gameState.playerCount - 1;
     const previousOrders = getOrderedValuesBeforeTurnIndex(orderInputTurnIndex);
     const previousActuals = getActualValuesBeforeTurn();
-    const disabledOrderValues = isOrderPhase
-      ? poker.getDisabledOrderValues(
-          roundMaximum,
-          previousOrders,
-          isLastPlayer,
-          {
-            gameState,
-            playerIndex: inputPlayerIndex,
-            currentRoundKey: gameState.currentRoundKey,
-          },
-        )
-      : [];
-    const remainingActual = poker.getRemainingActualTricks(
-      roundMaximum,
-      previousActuals,
-    );
-    const allowedActualValues = poker.getAllowedActualValues(
-      roundMaximum,
-      previousActuals,
+    const values = Array.from(
+      { length: roundMaximum + 1 },
+      function (_, value) {
+        return value;
+      },
     );
 
     const title = requiresGameChoice
@@ -1262,17 +1282,6 @@
         : isOrderPhase
           ? "Заказ взяток"
           : "Взяті взятки";
-    let hint = "";
-
-    if (isOrderPhase) {
-      hint =
-        disabledOrderValues.length === 0
-          ? `Мін/Мах в раунді: 0-${roundMaximum}`
-          : `Значення недоступні: ${disabledOrderValues.join(", ")}.`;
-    } else {
-      hint = `Залишилося: ${remainingActual} / ${roundMaximum}`;
-    }
-
     return {
       title,
       playerName: inputPlayer ? inputPlayer.name : "Round complete",
@@ -1280,21 +1289,57 @@
         authoritativeOrder === null || authoritativeOrder === undefined
           ? ""
           : `Замовив: ${authoritativeOrder}`,
-      hint,
       requiresGameChoice,
       gameChoices: requiresGameChoice
         ? poker.ORDERED_GAME_CHOICES.map(poker.getOrderedGameChoiceDefinition)
         : [],
       selectedGameChoice: requiresGameChoice ? roundData.gameChoice : null,
-      values: isOrderPhase
-        ? Array.from({ length: roundMaximum + 1 }, function (_, value) {
-            return value;
-          })
-        : allowedActualValues,
-      disabledValues: disabledOrderValues,
-      onSelect: function (value, gameChoice) {
+      values,
+      selectedValue:
+        isOrderPhase && inputPlayer && roundData.results[inputPlayer.id]
+          ? roundData.results[inputPlayer.id].ordered
+          : !isOrderPhase && inputPlayer && roundData.results[inputPlayer.id]
+            ? roundData.results[inputPlayer.id].actual
+            : null,
+      isValueAllowed: isOrderPhase
+        ? function (value) {
+            return poker.isOrderAllowed(
+              roundMaximum,
+              value,
+              previousOrders,
+              isLastPlayer,
+              {
+                gameState,
+                playerIndex: inputPlayerIndex,
+                currentRoundKey: gameState.currentRoundKey,
+              },
+            );
+          }
+        : function (value) {
+            return poker.isActualAllowed(
+              roundMaximum,
+              value,
+              previousActuals,
+            );
+          },
+      playerOptions: isOrderPhase
+        ? []
+        : getActualPlayerPickerOptions(inputPlayerIndex, descriptor),
+      onConfirm: function (value, gameChoice) {
+        const roundKey = gameState.currentRoundKey;
+        const phase = gameState.currentPhase;
+        const canContinueSequence = !isOrderEditMode();
         if (enterValue(value, gameChoice)) {
-          closeNumberPicker();
+          if (
+            canContinueSequence &&
+            !gameState.chronologyComplete &&
+            gameState.currentRoundKey === roundKey &&
+            gameState.currentPhase === phase
+          ) {
+            openNumberPicker(getNumberPickerOptions());
+          } else {
+            closeNumberPicker();
+          }
         }
       },
     };
@@ -1308,44 +1353,47 @@
       "hidden",
       !options.orderContext,
     );
-    numberPickerHint.textContent = options.hint || "";
     numberPickerGameChoiceSection.classList.toggle(
       "hidden",
       !options.requiresGameChoice,
     );
-    numberPickerValuesLabel.classList.toggle(
+    numberPickerPlayerSection.classList.toggle(
       "hidden",
-      !options.requiresGameChoice,
+      options.playerOptions.length === 0,
     );
     numberPickerGameChoices.innerHTML = "";
-    numberPickerValues.innerHTML = "";
+    numberPickerPlayers.innerHTML = "";
     let selectedGameChoice = poker.normalizeOrderedGameChoice(
       options.selectedGameChoice,
     );
 
-    function renderValueButtons() {
-      numberPickerValues.innerHTML = "";
-
-      options.values.forEach(function (value) {
-        const button = document.createElement("button");
-        button.className = "value-button";
-        button.type = "button";
-        button.textContent = String(value);
-
-        if (
-          options.disabledValues.includes(value) ||
-          (options.requiresGameChoice && selectedGameChoice === null)
-        ) {
-          button.disabled = true;
-        }
-
-        button.addEventListener("click", function () {
-          options.onSelect(value, selectedGameChoice);
-        });
-
-        numberPickerValues.appendChild(button);
-      });
-    }
+    options.playerOptions.forEach(function (playerOption) {
+      const button = document.createElement("button");
+      const orderText = playerOption.order === null
+        ? ""
+        : `Замовив: ${playerOption.order}`;
+      const statusText = playerOption.actual === null
+        ? playerOption.selectable
+          ? "Поточний"
+          : "Очікує черги"
+        : `Взято: ${playerOption.actual}`;
+      button.className = "number-picker-player-option";
+      button.type = "button";
+      button.disabled = !playerOption.selectable;
+      button.classList.toggle("selected", playerOption.selected);
+      button.setAttribute("aria-pressed", String(playerOption.selected));
+      button.setAttribute("aria-current", playerOption.selected ? "true" : "false");
+      button.setAttribute(
+        "aria-label",
+        [playerOption.name, orderText, statusText].filter(Boolean).join(". "),
+      );
+      button.innerHTML = [
+        `<strong>${escapeHtml(playerOption.name)}</strong>`,
+        orderText ? `<span>${escapeHtml(orderText)}</span>` : "",
+        `<small>${escapeHtml(statusText)}</small>`,
+      ].join("");
+      numberPickerPlayers.appendChild(button);
+    });
 
     if (options.requiresGameChoice) {
       const choiceButtons = options.gameChoices.map(function (choice) {
@@ -1373,26 +1421,37 @@
         item.button.addEventListener("click", function () {
           selectedGameChoice = item.choice.id;
           renderSelectedGameChoice();
-          renderValueButtons();
+          wheelPicker.setConfirmationAvailable(true);
         });
       });
       renderSelectedGameChoice();
     }
 
-    renderValueButtons();
-
     numberPickerOverlay.classList.remove("hidden");
     numberPickerOverlay.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+    wheelPicker.configure({
+      values: options.values,
+      selectedValue: options.selectedValue,
+      isValueAllowed: options.isValueAllowed,
+      canConfirm: !options.requiresGameChoice || selectedGameChoice !== null,
+      onConfirm: function (value) {
+        options.onConfirm(value, selectedGameChoice);
+      },
+      onCancel: closeNumberPicker,
+    });
     numberPickerDialog.focus();
   }
 
   function closeNumberPicker() {
     numberPickerOverlay.classList.add("hidden");
     numberPickerOverlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
     numberPickerGameChoiceSection.classList.add("hidden");
-    numberPickerValuesLabel.classList.add("hidden");
+    numberPickerPlayerSection.classList.add("hidden");
     numberPickerGameChoices.innerHTML = "";
-    numberPickerValues.innerHTML = "";
+    numberPickerPlayers.innerHTML = "";
+    wheelPicker.reset();
     orderEditTurnIndex = null;
   }
 
@@ -1983,7 +2042,6 @@
 
   currentTurnButton.addEventListener("click", openCurrentTurnNumberPicker);
   numberPickerCloseButton.addEventListener("click", closeNumberPicker);
-  numberPickerCancelButton.addEventListener("click", closeNumberPicker);
   numberPickerOverlay.addEventListener("click", function (event) {
     if (event.target === numberPickerOverlay) {
       closeNumberPicker();

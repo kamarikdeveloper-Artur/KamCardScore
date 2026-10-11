@@ -773,12 +773,17 @@
     throw new Error("Unknown round maximum");
   }
 
-  function getStartPlayerIndex(sequenceIndex, playerCount) {
+  function getDealerIndex(sequenceIndex, playerCount) {
     const count = assertSupportedPlayerCount(playerCount);
     const index = Number(sequenceIndex);
     if (!Number.isInteger(index) || index < 0)
       throw new Error("Invalid round sequence index");
     return index % count;
+  }
+
+  function getStartPlayerIndex(sequenceIndex, playerCount) {
+    const count = assertSupportedPlayerCount(playerCount);
+    return (getDealerIndex(sequenceIndex, count) + 1) % count;
   }
 
   function getPlayerOrder(sequenceIndex, playerCount) {
@@ -1078,6 +1083,7 @@
     getFutureRoundPlaceholders,
     getRoundDescriptor,
     getRoundMaximum,
+    getDealerIndex,
     getStartPlayerIndex,
     getPlayerOrder,
     getPlayerOrderForRound,
