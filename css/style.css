@@ -1,19 +1,36 @@
 :root {
-  --bg: #f4f6f8;
-  --panel: #ffffff;
-  --panel-soft: #eef4f7;
-  --line: #032344;
-  --line-strong: #8ea0b3;
-  --text: #030447;
-  --muted: #053e89;
+  --color-txt-main: #000046;
+  --text-secondary: #000098;
+  --color-danger: rgb(200, 0, 0);
+  --color-dark: #000;
+  --color-success: rgb(0, 200, 0);
+
+  --panel-wrapper-width: 700px;
+  --panel-wrapper-height: 96dvh;
+  --panel-padding: 5px;
+
+  --border-radius: 5px;
+
+  --btn-border: 1px solid var(--color-danger);
+  --btn-color-txt: #fff;
+  --btn-padding: 10px;
+  --btn-primary-bg: linear-gradient(90deg, #000 50%, #c80000 100%);
+  --btn-primary-bg-revers: linear-gradient(90deg, #c80000 0%, #000 100%);
+
+  --bg-app: linear-gradient(180deg, rgb(0, 90, 200), rgb(220, 200, 0));
+  --bg-img: url("../assets/backgrounds/img-bg-main.png");
+  --bg-panel: rgb(220, 220, 255);
+  --bg-panel-title: rgb(160, 160, 255);
+
   --accent: #176b87;
   --accent-strong: rgb(15, 83, 105);
   --accent-soft: #d9eef4;
-  --danger: #b42318;
-  --success: #157f3f;
   --inactive: #eef0f2;
   --shadow: 0 18px 55px rgba(31, 42, 55, 0.12);
-  --main-txt-color: #00013f;
+  --muted: #032344;
+  --base-line: #032344;
+  --color-value: #5ba4f1;
+  --table-header: #f5f351;
 }
 
 * {
@@ -22,8 +39,14 @@
   padding: 0;
 }
 
-img {
+img,
+span {
   display: block;
+}
+
+/* OK */
+fieldset {
+  border: 0;
 }
 
 html {
@@ -31,11 +54,9 @@ html {
 }
 
 body {
-  min-height: 100vh;
-  color: var(--text);
-  background:
-    linear-gradient(135deg, rgba(0, 87, 184, 0.9), transparent 55%),
-    linear-gradient(315deg, rgba(255, 217, 0, 0.9), transparent 55%), var(--bg);
+  min-height: 100dvh;
+  color: var(--color-txt-main);
+  background: var(--bg-app);
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -60,128 +81,127 @@ button:disabled {
   display: none !important;
 }
 
+/* OK */
 .app-shell {
-  width: min(800px, 100%);
+  width: min(var(--panel-wrapper-width), 100%);
   margin: 0 auto;
-  padding: 7px;
+  padding: var(--panel-padding);
 }
 
+/* OK */
 .shell-panel,
 .setup-panel,
 .game-panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  box-shadow: var(--shadow);
+  overflow: auto;
+  background: var(--bg-img);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
 }
 
+.game-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  height: 96dvh;
+  padding: calc(var(--panel-padding) + 5px);
+  /*overflow: hidden;*/
+}
+
+/* OK */
 .shell-panel,
 .setup-panel {
   display: grid;
-  gap: 10px;
-  max-width: 760px;
+  gap: clamp(10px, 3dvh, 30px);
+  max-width: 700px;
   margin: 0 auto;
-  padding: 10px;
+  padding: clamp(5px, 4vw, 20px);
 }
 
+/* OK */
 .shell-heading {
   text-align: center;
 }
 
-.title-game-neme {
-  font-size: 45px;
-}
-
+/* OK */
 .game-registry,
 .menu-actions {
   display: grid;
-  gap: 12px;
+  gap: clamp(5px, 2dvh, 20px);
 }
 
 .game-entry {
   display: grid;
   gap: 6px;
-  min-height: 75px;
-  padding: 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  color: var(--text);
-  background: var(--panel-soft);
-  text-align: left;
-  justify-content: center;
-  justify-items: center;
+  padding: clamp(5px, 3vw, 15px);
+
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--btn-color-txt);
+  background: var(--btn-primary-bg);
+
+  /* text-align: left; */
+  /* justify-content: center; */
+  /* justify-items: center; */
 }
 
 .game-entry strong {
-  font-size: 1.9rem;
+  font-size: clamp(1rem, 10vw, 3rem);
 }
 
+/* OK */
 .game-entry span,
 .menu-actions button span {
-  color: var(--muted);
-  font-size: 1rem;
+  font-size: clamp(0.6rem, 4vw, 1.5rem);
   font-weight: 700;
 }
 
 .game-entry:not(:disabled):hover,
 .game-entry:not(:disabled):focus-visible {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  animation: change-color 1s infinite alternate ease-in-out;
 }
 
+/* OK */
 .game-entry:disabled,
 .menu-actions button:disabled {
-  color: var(--muted);
-  background: var(--inactive);
-  opacity: 0.75;
+  background: var(--btn-primary-bg-revers);
+  opacity: 0.5;
 }
 
+/* OK */
 .menu-actions {
-  width: min(180px, 100%);
   margin: 0 auto;
-}
-
-.menu-actions button {
-  min-height: 40px;
-}
-
-.menu-actions button span {
-  display: block;
 }
 
 .mariage-action-panel {
   display: grid;
-  gap: 12px;
-  min-height: 86px;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #fff;
+  /* gap: 12px; */
+  /* min-height: 86px; */
+  padding: var(--btn-padding);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-panel);
 }
 
 .mariage-player-buttons,
 .mariage-entry-row,
 .mariage-quick-actions {
   display: flex;
-  align-items: end;
-  gap: 10px;
+  justify-content: space-evenly;
+  /* align-items: end; */
+  gap: 20px;
   flex-wrap: wrap;
-  margin-top: 10px;
-}
-
-.mariage-player-buttons button,
-.mariage-quick-actions button {
-  min-height: 48px;
 }
 
 .mariage-entry-row input {
   width: min(220px, 100%);
   min-height: 48px;
   padding: 8px 10px;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  color: var(--text);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
   background: #fff;
   font-size: 1.1rem;
   font-weight: 800;
@@ -196,7 +216,7 @@ button:disabled {
 
 .mariage-message {
   min-height: 5px;
-  color: var(--danger);
+  color: var(--color-danger);
   font-weight: 700;
 }
 
@@ -207,7 +227,7 @@ button:disabled {
 .mariage-result-cell {
   width: auto;
   min-width: 48px;
-  font-size: 1rem;
+  font-size: clamp(0.7rem, 3vw, 1.3rem);
 }
 
 .mariage-table .score-cell {
@@ -270,12 +290,12 @@ button:disabled {
 .mariage-result--exact555 .mariage-result-value {
   position: relative;
   z-index: 1;
-  color: var(--ink);
+  color: var(--color-danger);
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 0 2px #fff;
-  transform: translateX(-5px);
-  white-space: nowrap;
+  text-shadow: 0 0 2px #000;
+  /* transform: translateX(-5px); */
+  /* white-space: nowrap; */
 }
 
 .mariage-status-badge {
@@ -333,7 +353,7 @@ button:disabled {
 .mariage-settings-section {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--base-line);
 }
 
 .mariage-settings-section h3 {
@@ -352,7 +372,7 @@ button:disabled {
   width: 100%;
   min-height: 42px;
   padding: 7px 9px;
-  border: 1px solid var(--line);
+  border: var(--btn-border);
   border-radius: 4px;
   background: #fff;
   color: var(--ink);
@@ -380,7 +400,7 @@ button:disabled {
   min-height: 30px;
   padding: 0;
   place-items: center;
-  border: 1px solid var(--line-strong);
+  border: var(--btn-border);
   border-radius: 50%;
   color: var(--accent-strong);
   background: #fff;
@@ -390,14 +410,18 @@ button:disabled {
   vertical-align: middle;
 }
 
-.status-label .mariage-info-button {
+/* .status-label .mariage-info-button {
   margin-left: 3px;
-}
+} */
 
-.mariage-entry-row label .mariage-info-button,
+/* .mariage-entry-row label .mariage-info-button, */
 .mariage-quick-actions .mariage-info-button {
   width: 30px;
   min-height: 30px;
+}
+
+.order-points {
+  font-size: 1.6rem;
 }
 
 .mariage-help-dialog {
@@ -422,17 +446,41 @@ button:disabled {
   font-size: 1rem;
 }
 
-.mariage-settings-edit {
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  background-color: #fff;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.btn-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* .btn-icon:not([src]),
+.btn-icon:-moz-broken,
+.btn-icon:broken {
+  opacity: 0;
+} */
+
+/* .mariage-settings-edit {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 20px;
-}
+} */
 
-.mariage-settings-edit img {
+/* .mariage-settings-edit img {
   width: 22px;
   height: 22px;
-}
+} */
 
 .pending-order-score {
   color: var(--muted);
@@ -465,12 +513,8 @@ button:disabled {
   gap: 8px;
   min-height: 36px;
   margin: 0 2px 8px;
-  padding: 4px 8px;
+  /* padding: 4px 8px; */
   background: #fff;
-}
-
-.mariage-table-toolbar .secondary-button {
-  font-size: 0.9rem;
 }
 
 .mariage-dealer {
@@ -494,8 +538,8 @@ button:disabled {
 .mariage-replay-dialog {
   width: min(300px, 100%);
   padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
   background: #fff;
   box-shadow: var(--shadow);
 }
@@ -553,7 +597,7 @@ button:disabled {
 }
 
 .mariage-edit-error {
-  color: var(--danger);
+  color: var(--color-danger);
   font-weight: 700;
 }
 
@@ -572,9 +616,9 @@ button:disabled {
 .mariage-edit-value {
   min-height: 34px;
   padding: 4px 8px;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  color: var(--text);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
   background: #fff;
   font-size: 0.86rem;
   font-weight: 700;
@@ -606,28 +650,20 @@ button:disabled {
   width: 100%;
   min-height: 42px;
   padding: 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
   background: #fff;
 }
 
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid var(--accent-strong);
+  outline: 2px solid var(--color-success);
   outline-offset: 2px;
 }
 
 .main-title {
   display: flex;
   justify-content: center;
-}
-
-.game-panel {
-  padding: 5px;
-  background-image: url("../assets/backgrounds/img-bg-main.png");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
 }
 
 .game-header,
@@ -638,53 +674,67 @@ input:focus-visible {
   align-items: center;
 }
 
+.status-strip-round {
+  display: flex;
+  gap: 10px;
+  font-size: 1.6rem;
+}
+
 .game-header {
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 20px;
 }
 
 .setup-actions {
-  justify-content: center;
+  justify-content: space-around;
 }
 
-.eyebrow,
+.eyebrow {
+  font-size: clamp(0.8rem, 5vw, 1.5rem);
+  color: var(--text-secondary);
+}
+
+/* .eyebrow-game {
+  margin-bottom: 0;
+} */
+
 .status-label {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--muted);
-  font-size: 0.8rem;
+  color: var(--text-secondary);
   font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
+  /* letter-spacing: 0; */
+  /* text-transform: uppercase; */
 }
 
 h1 {
-  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  font-size: clamp(1.5rem, 10vw, 4rem);
   line-height: 1.05;
 }
 
+/* OK */
 .player-count,
 .game-length {
   display: flex;
   gap: 15px;
-  border: 0;
   flex-wrap: wrap;
 }
 
-.player-count legend,
-.game-length legend {
+/* OK */
+.player-count-title,
+.game-length-title {
   width: 100%;
   margin-bottom: 10px;
-  color: var(--muted);
+  color: var(--text-secondary);
+  font-size: clamp(0.8rem, 4vw, 1.6rem);
   font-weight: 700;
 }
 
+/* OK */
 .player-count label,
 .game-length label {
   position: relative;
 }
 
+/* OK */
 .player-count input,
 .game-length input {
   position: absolute;
@@ -692,53 +742,59 @@ h1 {
   opacity: 0;
 }
 
-.player-count span,
+/* OK */
 .game-length span {
-  display: grid;
-  min-width: 30px;
-  min-height: 30px;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel-soft);
+  color: var(--btn-color-txt);
+  padding: clamp(5px, 2vw, var(--btn-padding));
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--btn-primary-bg);
+  font-size: clamp(0.8rem, 4vw, 1.6rem);
   font-weight: 800;
 }
 
-.player-count span {
-  font-size: 20px;
-}
-
-.game-length span {
-  padding: 0 8px;
+/* OK */
+.player-count-value {
+  color: var(--btn-color-txt);
+  padding: 5px 15px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--btn-primary-bg);
+  font-size: clamp(0.8rem, 4vw, 1.6rem);
+  font-weight: 800;
 }
 
 .player-count input:checked + span,
 .game-length input:checked + span {
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
+  animation: change-color 1s infinite alternate ease-in-out;
 }
 
+/* OK */
 .name-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 20px;
 }
 
+/* OK */
 .name-field label {
   display: block;
   margin-bottom: 6px;
-  color: var(--muted);
+  color: var(--text-secondary);
+  font-size: clamp(0.8rem, 4vw, 1.6rem);
   font-weight: 700;
 }
 
+/* OK */
 .name-field input {
   width: 100%;
-  padding: 5px 10px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--text);
-  background: #fff;
+  padding: clamp(5px, 2vw, var(--btn-padding));
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--btn-color-txt);
+  background: var(--btn-primary-bg);
+  font-size: clamp(0.8rem, 4vw, 1.6rem);
+  font-weight: 700;
 }
 
 .setup-actions {
@@ -747,46 +803,35 @@ h1 {
 }
 
 .game-actions {
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: clamp(5px, 2vw, 20px);
 }
 
+/* OK */
 .primary-button,
 .secondary-button {
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 25px;
+  padding: clamp(5px, 1vw, var(--btn-padding)) clamp(5px, 2.8vw, 30px);
+  color: var(--btn-color-txt);
+  background: var(--btn-primary-bg);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  font-size: clamp(0.8rem, 5vw, 2rem);
   font-weight: 800;
 }
 
-.btn-new-game {
-  font-size: 15px;
-  padding: 6px;
+.primary-button:not(:disabled):hover,
+.primary-button:not(:disabled):focus-visible,
+.secondary-button:not(:disabled):hover,
+.secondary-button:not(:disabled):focus-visible {
+  animation: change-color 1s infinite alternate ease-in-out;
 }
 
-.game-actions .secondary-button {
-  padding: 6px;
-  font-size: 15px;
-}
-
-.primary-button {
-  color: #fff;
-  background: var(--accent);
-  border: 1px solid var(--accent);
-}
-
-.primary-button:hover {
-  background: var(--accent-strong);
-}
-
-.secondary-button {
+/* .secondary-button {
   color: var(--accent-strong);
   background: #fff;
   border: 1px solid var(--line-strong);
-}
+} */
 
-#mariageSettingsButton {
+/* #mariageSettingsButton {
   width: 35px;
   height: 35px;
   padding: 0;
@@ -794,157 +839,162 @@ h1 {
   align-items: center;
   justify-content: center;
   border: none;
+  background: transparent;
   cursor: pointer;
-}
+} */
 
-#mariageSettingsButton img {
+/* #mariageSettingsButton img {
   width: 100%;
   height: 100%;
-}
+} */
 
 .status-strip {
   flex-wrap: wrap;
-  gap: 8px 14px;
-  justify-content: space-between;
-  padding: 6px;
-  margin-bottom: 14px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--panel-soft);
+  gap: 20px;
+  justify-content: space-around;
+  padding: 10px 20px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-panel);
 }
 
-.status-strip > div {
+/* .status-strip > div {
   min-width: 45px;
   text-align: center;
-}
+} */
 
-.status-strip strong {
-  font-size: 1.1rem;
-}
+/* .status-strip strong {
+  font-size: 1.6rem;
+} */
 
 .round-order-status-bar {
-  position: fixed;
-  right: max(8px, env(safe-area-inset-right));
-  bottom: max(5px, env(safe-area-inset-bottom));
-  left: max(8px, env(safe-area-inset-left));
-  z-index: 40;
-  width: min(560px, calc(100% - 16px));
-  margin: 0 auto;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #fff;
-  box-shadow: 0 8px 28px rgba(17, 24, 39, 0.25);
+  padding: 10px 20px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-panel);
 }
 
 .round-order-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
+  /* display: flex; */
+  /* align-items: center; */
+  /* justify-content: space-around; */
+  font-size: 1.5rem;
+  font-weight: 900;
+  /* gap: 8px 16px; */
   text-align: center;
 }
 
-.round-order-status .status-label {
+/* .round-order-status .status-label {
   margin-bottom: 0;
-}
+} */
 
 .round-order-progress,
 .round-order-classification {
   display: block;
 }
 
-.round-order-classification {
-  font-size: 0.92rem;
-  font-weight: 900;
-}
-
 .round-status--shortage {
-  color: var(--danger);
+  color: var(--color-danger);
 }
 
 .round-status--overage {
-  color: var(--success);
+  color: var(--color-success);
 }
 
 .current-turn-action {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px;
-  margin-bottom: 10px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #fff;
+  justify-content: space-around;
+  gap: 20px;
+  padding: 10px 20px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-panel);
 }
 
-.current-turn-copy {
+/* .current-turn-copy {
   min-width: 0;
-}
+} */
 
 .current-turn-player {
   display: block;
   overflow-wrap: anywhere;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 6vw, 2.5rem);
 }
 
 .current-turn-remaining {
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 1.3rem;
   font-weight: 700;
 }
 
-.current-turn-button {
+/* .current-turn-button {
   min-width: 140px;
   min-height: 44px;
   flex: 0 0 auto;
-}
+} */
 
 .table-wrap {
-  max-height: min(60vh, 760px);
-  overflow: auto;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #fff;
-  padding: 0 0 10px;
+  flex-grow: 1;
+  overflow-y: auto;
+  /* max-height: min(55vh, 590px); */
+  /* overflow-y: auto; */
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  background: var(--bg-panel);
 }
 
-.score-table tbody::after {
+/* @media (min-width: 767.98px) {
+  .table-wrap {
+    max-height: min(70vh, 760px);
+  }
+} */
+
+/* @media (min-width: 1199.98px) {
+  .table-wrap {
+    max-height: min(65vh, 760px);
+  }
+} */
+
+/* @media (min-width: 1399.98px) {
+  .table-wrap {
+    max-height: min(75vh, 760px);
+  }
+} */
+
+/* .score-table tbody::after {
   display: table-row;
   height: clamp(260px, calc(75dvh - 30px), 700px);
   content: "";
   pointer-events: none;
-}
+} */
 
-#gamePanel .table-wrap {
+/* #gamePanel .table-wrap {
   padding-bottom: var(--round-order-status-clearance, 10px);
-}
+} */
 
 .score-table {
   width: 100%;
-  border-collapse: collapse;
+  /* border-collapse: collapse; */
+  /* table-layout: fixed; NO */
 }
 
 .score-table th,
 .score-table td {
-  border: 1px solid var(--line);
+  border: 1px solid var(--color-danger);
   text-align: center;
 }
 
 .score-table th {
-  height: 35px;
-  padding: 3px;
-  background: #f5f351;
+  padding: 5px;
 }
 
 .score-table thead th {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: #f5f351;
-  box-shadow: 0 1px 0 var(--line);
+  background: var(--bg-panel-title);
 }
 
 .round-header,
@@ -955,7 +1005,7 @@ h1 {
 
 .round-header {
   z-index: 4;
-  font-size: 0.8rem;
+  font-size: 1.5rem;
 }
 
 .result-header {
@@ -963,25 +1013,27 @@ h1 {
 }
 
 .player-header {
-  width: 100px;
-  min-width: 90px;
-  font-size: 1rem;
+  /* width: 30%; */
+  /* width: 100px; */
+  /* min-width: 80px; */
+  font-size: 1.7rem;
 }
 
 .score-header,
 .score-cell {
-  width: 118px;
+  width: 100px;
 }
 
 .round-cell {
-  font-size: 1.3rem;
-  background: #f5f351;
+  height: 45px;
+  font-size: 1.5rem;
+  background: var(--bg-panel-title);
 }
 
 .suit-icon {
   display: block;
-  width: 22px;
-  height: 22px;
+  width: 70%;
+  height: 70%;
   max-width: 100%;
   margin: 0 auto;
   object-fit: contain;
@@ -998,11 +1050,11 @@ h1 {
 }
 
 .ordered-round-index {
-  font-size: 1rem;
+  font-size: 1.5rem;
 }
 
 .ordered-round-choice-icon {
-  display: block;
+  /* display: block; */
   width: 20px;
   height: 20px;
   margin: 1px auto 0;
@@ -1015,25 +1067,25 @@ h1 {
 }
 
 .score-cell {
-  font-size: 1.1rem;
+  font-size: 1.8rem;
   font-weight: 800;
 }
 
 .score-cell.positive {
-  color: var(--success);
+  color: var(--color-success);
 }
 
 .score-cell.negative {
-  color: var(--danger);
+  color: var(--color-danger);
 }
 
 .result-cell {
   position: relative;
-  height: 31px;
-  width: 35px;
-  min-width: 33px;
-  padding: 0;
-  background: #fff;
+  /* height: 45px; */
+  width: 40px;
+  /* min-width: 33px; */
+  /* padding: 0; */
+  /* background: #fff; */
   font-weight: 800;
 }
 
@@ -1060,7 +1112,7 @@ h1 {
 }
 
 .result-cell.active {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--color-success);
   outline-offset: -4px;
   background: var(--accent-soft);
 }
@@ -1068,7 +1120,7 @@ h1 {
 .result-empty,
 .result-single {
   display: grid;
-  min-height: 30px;
+  /* min-height: 40px; */
   place-items: center;
 }
 
@@ -1078,25 +1130,25 @@ h1 {
 }
 
 .result-single {
-  font-size: 1rem;
+  font-size: 1.6rem;
 }
 
 .result-outcome--exact .result-value--exact,
 .ordered-value--target {
-  color: var(--success);
+  color: var(--color-success);
 }
 
 .actual-value--under {
-  color: var(--danger);
+  color: var(--color-danger);
 }
 
 .actual-value--over {
-  color: var(--line-strong);
+  color: var(--color-value);
 }
 
 .result-split {
   position: relative;
-  min-height: 35px;
+  min-height: 40px;
 }
 
 .result-split::after {
@@ -1106,8 +1158,8 @@ h1 {
   background: linear-gradient(
     to bottom right,
     transparent calc(50% - 1px),
-    var(--line-strong) calc(50% - 1px),
-    var(--line-strong) calc(50% + 1px),
+    var(--base-line) calc(50% - 1px),
+    var(--base-line) calc(50% + 1px),
     transparent calc(50% + 1px)
   );
   pointer-events: none;
@@ -1117,17 +1169,17 @@ h1 {
 .actual-value {
   position: absolute;
   z-index: 1;
-  font-size: 0.9rem;
+  font-size: 1.5rem;
 }
 
 .ordered-value {
-  top: 0px;
+  top: -5px;
   left: 5px;
 }
 
 .actual-value {
   right: 5px;
-  bottom: 0px;
+  bottom: -5px;
 }
 
 .future-row td,
@@ -1150,7 +1202,7 @@ h1 {
 
 .number-picker-order-context {
   margin-top: 4px;
-  color: var(--success);
+  color: var(--color-success);
   font-size: 0.95rem;
   font-weight: 800;
 }
@@ -1161,20 +1213,23 @@ h1 {
   z-index: 50;
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: var(--panel-padding);
   background: rgba(17, 24, 39, 0.48);
 }
 
 .number-picker-dialog {
-  width: 340px;
-  max-width: 100%;
-  min-width: 0;
-  max-height: min(690px, calc(100vh - 36px));
-  max-height: min(690px, calc(100dvh - 36px));
+  width: calc(var(--panel-wrapper-width) / 2);
+  height: clamp(300px, 100%, 500px);
+  /* clamp(5px, 5vw, 15px) */
+  /* max-width: 100%; */
+  /* min-width: 0; */
+  /* max-height: calc(100dvh - 20px); */
+  /* max-height: min(690px, calc(100vh - 36px));
+  max-height: min(690px, calc(100dvh - 36px)); */
   overflow: auto;
   padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
   background: #fff;
   box-shadow: 0 24px 70px rgba(17, 24, 39, 0.28);
 }
@@ -1193,16 +1248,21 @@ h1 {
 
 .icon-button {
   display: grid;
-  width: 35px;
-  height: 35px;
+  width: 30px;
+  height: 30px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  color: var(--text);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
   background: #fff;
   font-size: 1.15rem;
   font-weight: 900;
+}
+
+.icon-button img {
+  width: 100%;
+  object-fit: contain;
 }
 
 .game-choice-section {
@@ -1221,10 +1281,13 @@ h1 {
   min-width: 0;
   min-height: 54px;
   place-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  color: var(--text);
-  background: var(--panel-soft);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  background: var(--bg-img);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 .game-choice-button img {
@@ -1286,10 +1349,13 @@ h1 {
   align-content: center;
   gap: 2px;
   padding: 7px 8px;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  color: var(--text);
-  background: var(--panel-soft);
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
+  color: var(--text-secondary);
+  background: var(--bg-img);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
   text-align: left;
 }
 
@@ -1297,6 +1363,11 @@ h1 {
   border-color: var(--accent-strong);
   background: var(--accent-soft);
   box-shadow: inset 0 0 0 1px var(--accent-strong);
+}
+
+.number-picker-player-option.completed {
+  border-color: #b8bec7;
+  background: #e5e7eb;
 }
 
 .number-picker-player-option:disabled {
@@ -1314,7 +1385,7 @@ h1 {
 }
 
 .number-picker-player-option span {
-  color: var(--success);
+  color: var(--color-success);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -1326,10 +1397,10 @@ h1 {
 
 .wheel-picker-shell {
   position: relative;
-  height: 240px;
+  height: 20px;
   overflow: hidden;
-  border-radius: 5px;
-  background: #f8fafc;
+  border-radius: var(--border-radius);
+  background: #5599dd;
 }
 
 .wheel-picker-shell::before,
@@ -1385,7 +1456,7 @@ h1 {
   width: 100%;
   height: 48px;
   padding: 0;
-  border: 0;
+  /* border: 0; */
   scroll-snap-align: center;
   scroll-snap-stop: always;
   background: transparent;
@@ -1396,11 +1467,11 @@ h1 {
 }
 
 .wheel-picker-item--allowed {
-  color: var(--success);
+  color: var(--color-success);
 }
 
 .wheel-picker-item--blocked {
-  color: var(--danger);
+  color: var(--color-danger);
 }
 
 .wheel-picker-item--selected {
@@ -1417,7 +1488,7 @@ h1 {
 
 .number-picker-actions button {
   min-width: 0;
-  min-height: 46px;
+  min-height: 40px;
   padding: 7px 6px;
   overflow-wrap: anywhere;
   font-size: 1rem;
@@ -1445,8 +1516,8 @@ h1 {
   max-height: calc(100dvh - 32px);
   overflow: auto;
   padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
+  border: var(--btn-border);
+  border-radius: var(--border-radius);
   background: #fff;
   box-shadow: 0 24px 70px rgba(17, 24, 39, 0.3);
 }
@@ -1455,7 +1526,7 @@ h1 {
   display: grid;
   justify-items: center;
   padding: 4px 8px 20px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--base-line);
   text-align: center;
 }
 
@@ -1491,7 +1562,7 @@ h1 {
   gap: 12px;
   min-height: 52px;
   padding: 8px 6px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--base-line);
 }
 
 .final-standing-row.winner {
@@ -1524,70 +1595,14 @@ h1 {
   min-height: 48px;
 }
 
-@media (max-width: 520px) {
-  .mariage-entry-row {
-    align-items: stretch;
-    flex-direction: column;
+@keyframes change-color {
+  0% {
+    background: var(--color-dark);
   }
-
-  .mariage-entry-row input,
-  .mariage-entry-row button {
-    width: 100%;
+  50% {
+    background: var(--color-success);
   }
-
-  .current-turn-action {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .current-turn-button {
-    width: 100%;
-  }
-
-  .round-order-status {
-    gap: 4px 10px;
-    flex-wrap: wrap;
-  }
-
-  .game-choice-buttons {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .number-picker-overlay {
-    padding-top: max(10px, env(safe-area-inset-top));
-    padding-right: max(10px, env(safe-area-inset-right));
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
-    padding-left: max(10px, env(safe-area-inset-left));
-  }
-
-  .number-picker-dialog {
-    max-height: calc(100dvh - 20px);
-    padding: 14px;
-  }
-
-  .number-picker-header {
-    margin-bottom: 12px;
-  }
-
-  .wheel-picker-shell {
-    height: 192px;
-  }
-
-  .wheel-picker-viewport {
-    padding-top: 72px;
-    padding-bottom: 72px;
-  }
-
-  .final-results-dialog {
-    padding: 16px;
-  }
-
-  .final-standing-row {
-    grid-template-columns: 70px minmax(0, 1fr) auto;
-    gap: 8px;
-  }
-
-  .final-results-actions {
-    grid-template-columns: 1fr;
+  100% {
+    background: var(--color-dark);
   }
 }

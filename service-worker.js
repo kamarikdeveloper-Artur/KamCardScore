@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v18`;
+const CACHE_NAME = `${CACHE_PREFIX}v20`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -19,8 +19,8 @@ const APP_SHELL = [
   "./assets/backgrounds/img-bg-main.png",
   "./assets/suits/icon-spades.svg",
   "./assets/suits/icon-hearts.svg",
-  "./assets/suits/clubs.svg",
-  "./assets/suits/diamonds.svg",
+  "./assets/suits/icon-clubs.svg",
+  "./assets/suits/icon-diamonds.svg",
   "./assets/icons/img-app-192.png",
   "./assets/icons/img-app-256.png",
   "./assets/icons/img-app-512.png",
