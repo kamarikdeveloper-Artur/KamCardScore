@@ -22,13 +22,13 @@
       id: "clubs",
       symbol: "♣",
       name: "Трефи",
-      icon: "assets/suits/icon-clubs.svg",
+      icon: "assets/suits/clubs.svg",
     }),
     Object.freeze({
       id: "diamonds",
       symbol: "♦",
       name: "Бубни",
-      icon: "assets/suits/icon-diamonds.svg",
+      icon: "assets/suits/diamonds.svg",
     }),
   ]);
   const SUIT_IDS = Object.freeze(
@@ -1018,7 +1018,8 @@
   function calculateRoundScore(scoringType, ordered, actual) {
     if (scoringType === "mines") return calculateMinesScore(actual);
     if (scoringType === "golden") return calculateGoldenScore(actual);
-    if (scoringType === "lobiky") return calculateLobikyScore(ordered, actual);
+    if (scoringType === "lobiky")
+      return calculateLobikyScore(ordered, actual);
     return calculateScore(ordered, actual);
   }
 

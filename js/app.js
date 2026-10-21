@@ -7,94 +7,85 @@
   const POKER_GAME_TYPE = "poker";
   const LEGACY_POKER_GAME_TYPE = "poker" + "ochok";
 
-  const APP_SCREENS = Object.freeze({
-    GAME_HUB: "GAME_HUB",
-    POKER_MENU: "POKER_MENU",
-    POKER_SETUP: "POKER_SETUP",
-    POKER_GAME: "POKER_GAME",
-    MARIAGE_MENU: "MARIAGE_MENU",
-    MARIAGE_SETUP: "MARIAGE_SETUP",
-    MARIAGE_GAME: "MARIAGE_GAME",
+  const APP_VIEWS = Object.freeze({
+    HUB: "hub",
+    MENU: "menu",
+    SETUP: "setup",
+    GAME: "game",
   });
   const GAME_REGISTRY = Object.freeze([
     Object.freeze({ id: "poker", name: "Покер", available: true }),
     Object.freeze({ id: "mariage", name: "Мар'яж", available: true }),
   ]);
 
-  const gameHubPanel = document.getElementById("gameHubPanel");
-  const pokerMenuPanel = document.getElementById("pokerMenuPanel");
-  const mariageMenuPanel = document.getElementById("mariageMenuPanel");
-  const mariageSetupPanel = document.getElementById("mariageSetupPanel");
-  const mariageGamePanel = document.getElementById("mariageGamePanel");
+  const gameMenuPanel = document.getElementById("gameMenuPanel");
+  const gameMenuTitle = gameMenuPanel.querySelector("[data-role='game-title']");
+  const gameMenuContinueButton = gameMenuPanel.querySelector("[data-action='continue-game']");
   const gameRegistry = document.getElementById("gameRegistry");
-  const setupPanel = document.getElementById("setupPanel");
-  const gamePanel = document.getElementById("gamePanel");
-  const playerNameFields = document.getElementById("playerNameFields");
-  const startGameButton = document.getElementById("startGameButton");
-  const menuNewGameButton = document.getElementById("menuNewGameButton");
-  const menuContinueButton = document.getElementById("menuContinueButton");
-  const menuBackButton = document.getElementById("menuBackButton");
-  const setupBackButton = document.getElementById("setupBackButton");
-  const newGameButton = document.getElementById("newGameButton");
-  const gameMenuButton = document.getElementById("gameMenuButton");
-  const resultsButton = document.getElementById("resultsButton");
-  const scoreTable = document.getElementById("scoreTable");
-  const currentRoundLabel = document.getElementById("currentRoundLabel");
-  const currentDealerLabel = document.getElementById("currentDealerLabel");
-  const roundOrderStatusBar = document.getElementById("roundOrderStatusBar");
-  const roundOrderStatus = document.getElementById("roundOrderStatus");
-  const roundOrderProgress = document.getElementById("roundOrderProgress");
-  const roundOrderClassification = document.getElementById("roundOrderClassification");
-  const currentTurnAction = document.getElementById("currentTurnAction");
-  const currentTurnPlayer = document.getElementById("currentTurnPlayer");
-  const currentTurnRemaining = document.getElementById("currentTurnRemaining");
-  const currentTurnButton = document.getElementById("currentTurnButton");
-  const numberPickerOverlay = document.getElementById("numberPickerOverlay");
-  const numberPickerDialog = numberPickerOverlay.querySelector(".number-picker-dialog");
-  const numberPickerTitle = document.getElementById("numberPickerTitle");
-  const numberPickerPlayer = document.getElementById("numberPickerPlayer");
-  const numberPickerOrderContext = document.getElementById("numberPickerOrderContext");
-  const numberPickerGameChoiceSection = document.getElementById("numberPickerGameChoiceSection");
-  const numberPickerGameChoices = document.getElementById("numberPickerGameChoices");
-  const numberPickerPlayerSection = document.getElementById("numberPickerPlayerSection");
-  const numberPickerPlayers = document.getElementById("numberPickerPlayers");
-  const numberPickerValues = document.getElementById("numberPickerValues");
-  const numberPickerConfirmButton = document.getElementById("numberPickerConfirmButton");
-  const numberPickerCloseButton = document.getElementById("numberPickerCloseButton");
-  const numberPickerCancelButton = document.getElementById("numberPickerCancelButton");
-  const finalResultsOverlay = document.getElementById("finalResultsOverlay");
-  const finalResultsDialog = finalResultsOverlay.querySelector(".final-results-dialog");
-  const finalResultsTitle = document.getElementById("finalResultsTitle");
-  const finalWinnerNames = document.getElementById("finalWinnerNames");
-  const finalWinnerScore = document.getElementById("finalWinnerScore");
-  const finalStandings = document.getElementById("finalStandings");
-  const finalNewGameButton = document.getElementById("finalNewGameButton");
-  const finalExitButton = document.getElementById("finalExitButton");
+  const pokerGamePanel = document.getElementById("pokerGamePanel");
+  const pokerPlayerNameFields = document.getElementById("pokerPlayerNameFields");
+  const pokerStartButton = document.getElementById("pokerStartButton");
+  const pokerSetupBackButton = document.getElementById("pokerSetupBackButton");
+  const pokerGameMenuButton = document.getElementById("pokerGameMenuButton");
+  const pokerResultsButton = document.getElementById("pokerResultsButton");
+  const pokerScoreTable = document.getElementById("pokerScoreTable");
+  const pokerCurrentRoundLabel = document.getElementById("pokerCurrentRoundLabel");
+  const pokerCurrentDealerLabel = document.getElementById("pokerCurrentDealerLabel");
+  const pokerActivePlayerLabel = document.getElementById("pokerActivePlayerLabel");
+  const pokerRoundOrderStatusBar = document.getElementById("pokerRoundOrderStatusBar");
+  const pokerRoundOrderStatus = document.getElementById("pokerRoundOrderStatus");
+  const pokerRoundOrderProgress = document.getElementById("pokerRoundOrderProgress");
+  const pokerRoundOrderClassification = document.getElementById("pokerRoundOrderClassification");
+  const pokerCurrentTurnAction = document.getElementById("pokerCurrentTurnAction");
+  const pokerCurrentTurnPlayer = document.getElementById("pokerCurrentTurnPlayer");
+  const pokerCurrentTurnButton = document.getElementById("pokerCurrentTurnButton");
+  const pokerNumberPickerOverlay = document.getElementById("pokerNumberPickerOverlay");
+  const numberPickerDialog = pokerNumberPickerOverlay.querySelector(".number-picker-dialog");
+  const pokerNumberPickerTitle = document.getElementById("pokerNumberPickerTitle");
+  const pokerNumberPickerPlayer = document.getElementById("pokerNumberPickerPlayer");
+  const pokerNumberPickerOrderContext = document.getElementById("pokerNumberPickerOrderContext");
+  const pokerNumberPickerGameChoiceSection = document.getElementById("pokerNumberPickerGameChoiceSection");
+  const pokerNumberPickerGameChoices = document.getElementById("pokerNumberPickerGameChoices");
+  const pokerNumberPickerPlayerSection = document.getElementById("pokerNumberPickerPlayerSection");
+  const pokerNumberPickerPlayers = document.getElementById("pokerNumberPickerPlayers");
+  const pokerNumberPickerValues = document.getElementById("pokerNumberPickerValues");
+  const pokerNumberPickerConfirmButton = document.getElementById("pokerNumberPickerConfirmButton");
+  const pokerNumberPickerCloseButton = document.getElementById("pokerNumberPickerCloseButton");
+  const pokerNumberPickerCancelButton = document.getElementById("pokerNumberPickerCancelButton");
+  const pokerFinalResultsOverlay = document.getElementById("pokerFinalResultsOverlay");
+  const finalResultsDialog = pokerFinalResultsOverlay.querySelector(".final-results-dialog");
+  const pokerFinalResultsTitle = document.getElementById("pokerFinalResultsTitle");
+  const pokerFinalWinnerNames = document.getElementById("pokerFinalWinnerNames");
+  const pokerFinalWinnerScore = document.getElementById("pokerFinalWinnerScore");
+  const pokerFinalStandings = document.getElementById("pokerFinalStandings");
+  const pokerFinalNewGameButton = document.getElementById("pokerFinalNewGameButton");
+  const pokerFinalExitButton = document.getElementById("pokerFinalExitButton");
 
   let gameState = null;
-  let appScreen = APP_SCREENS.GAME_HUB;
+  let activeGameId = null;
   let mariageController = null;
+  const gameControllers = new Map();
   let orderEditTurnIndex = null;
   let actualPickerPlayerId = null;
   let autoOpenedResultsGameId = null;
   let resultsPreviousFocus = null;
   const wheelPicker = window.CardScoreWheelPicker.create({
-    viewport: numberPickerValues,
-    confirmButton: numberPickerConfirmButton,
-    cancelButton: numberPickerCancelButton,
+    viewport: pokerNumberPickerValues,
+    confirmButton: pokerNumberPickerConfirmButton,
+    cancelButton: pokerNumberPickerCancelButton,
   });
 
   function syncRoundOrderStatusClearance() {
-    if (roundOrderStatusBar.classList.contains("hidden")) {
-      gamePanel.style.removeProperty("--round-order-status-clearance");
+    if (pokerRoundOrderStatusBar.classList.contains("hidden")) {
+      pokerGamePanel.style.removeProperty("--round-order-status-clearance");
       return;
     }
-    const clearance = roundOrderStatusBar.getBoundingClientRect().height + 16;
-    gamePanel.style.setProperty("--round-order-status-clearance", `${clearance}px`);
+    const clearance = pokerRoundOrderStatusBar.getBoundingClientRect().height + 16;
+    pokerGamePanel.style.setProperty("--round-order-status-clearance", `${clearance}px`);
   }
 
   if (typeof ResizeObserver === "function") {
-    new ResizeObserver(syncRoundOrderStatusClearance).observe(roundOrderStatusBar);
+    new ResizeObserver(syncRoundOrderStatusClearance).observe(pokerRoundOrderStatusBar);
   }
   window.addEventListener("resize", syncRoundOrderStatusClearance);
 
@@ -126,27 +117,27 @@
     const shortLastRound = poker.getBaseRoundCount(playerCount, "short");
     const fullLastRound = poker.getBaseRoundCount(playerCount, "full");
 
-    document.getElementById("shortGameLabel").textContent = `Скорочена 1-${shortLastRound}`;
-    document.getElementById("fullGameLabel").textContent = `Довга 1-${fullLastRound}`;
+    document.getElementById("pokerShortGameLabel").textContent = `Скорочена 1-${shortLastRound}`;
+    document.getElementById("pokerFullGameLabel").textContent = `Довга 1-${fullLastRound}`;
   }
 
   function renderPlayerNameFields() {
     const playerCount = getSelectedPlayerCount();
-    playerNameFields.innerHTML = "";
+    pokerPlayerNameFields.innerHTML = "";
     updateGameLengthLabels();
 
     for (let index = 0; index < playerCount; index += 1) {
       const wrapper = document.createElement("div");
       wrapper.className = "name-field";
       wrapper.innerHTML = [
-        `<label for="playerName${index + 1}">Гравець ${index + 1}</label>`,
-        `<input id="playerName${index + 1}" type="text" maxlength="10" value="Гравець ${index + 1}">`,
+        `<label class="name-field-label" for="pokerPlayerName${index + 1}">Гравець ${index + 1}</label>`,
+        `<input class="name-field-input" id="pokerPlayerName${index + 1}" type="text" maxlength="10" value="Гравець ${index + 1}">`,
       ].join("");
       const input = wrapper.querySelector("input");
       input.addEventListener("focus", function () {
         input.select();
       });
-      playerNameFields.appendChild(wrapper);
+      pokerPlayerNameFields.appendChild(wrapper);
     }
   }
 
@@ -188,7 +179,7 @@
   function createGameState() {
     const playerCount = getSelectedPlayerCount();
     const gameLength = getSelectedGameLength();
-    const nameInputs = Array.from(playerNameFields.querySelectorAll("input"));
+    const nameInputs = Array.from(pokerPlayerNameFields.querySelectorAll("input"));
     const players = nameInputs.slice(0, playerCount).map(function (input, index) {
       const cleanName = input.value.trim().slice(0, 10);
       return {
@@ -608,15 +599,28 @@
     return gameState.chronologyComplete ? storage.archiveCompletedGame(createCompletedGameSnapshot(gameState)) : null;
   }
 
-  function showScreen(screen) {
-    appScreen = screen;
-    gameHubPanel.classList.toggle("hidden", screen !== APP_SCREENS.GAME_HUB);
-    pokerMenuPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKER_MENU);
-    mariageMenuPanel.classList.toggle("hidden", screen !== APP_SCREENS.MARIAGE_MENU);
-    mariageSetupPanel.classList.toggle("hidden", screen !== APP_SCREENS.MARIAGE_SETUP);
-    mariageGamePanel.classList.toggle("hidden", screen !== APP_SCREENS.MARIAGE_GAME);
-    setupPanel.classList.toggle("hidden", screen !== APP_SCREENS.POKER_SETUP);
-    gamePanel.classList.toggle("hidden", screen !== APP_SCREENS.POKER_GAME);
+  function showView(view, gameId) {
+    activeGameId = gameId || null;
+    document.querySelectorAll("[data-view]").forEach(function (panel) {
+      const belongsToGame = panel.dataset.gameId;
+      const isVisible = panel.dataset.view === view && (!belongsToGame || belongsToGame === activeGameId);
+      panel.classList.toggle("hidden", !isVisible);
+    });
+  }
+
+  function getGameDefinition(gameId) {
+    return GAME_REGISTRY.find(function (game) {
+      return game.id === gameId;
+    }) || null;
+  }
+
+  function openGameMenu(gameId) {
+    const game = getGameDefinition(gameId);
+    const controller = gameControllers.get(gameId);
+    if (!game || !game.available || !controller) return;
+    gameMenuTitle.textContent = game.name;
+    gameMenuContinueButton.disabled = !controller.hasSavedGame();
+    showView(APP_VIEWS.MENU, gameId);
   }
 
   function renderGameRegistry() {
@@ -627,6 +631,7 @@
       // const status = document.createElement("span");
       button.type = "button";
       button.className = "game-entry";
+      name.className = "game-entry-txt";
       button.dataset.gameId = game.id;
       button.disabled = !game.available;
       name.textContent = game.name;
@@ -635,8 +640,7 @@
       // button.appendChild(status);
       if (game.available) {
         button.addEventListener("click", function () {
-          if (game.id === "poker") showPokerMenu();
-          if (game.id === "mariage") mariageController.showMenu();
+          openGameMenu(game.id);
         });
       }
       gameRegistry.appendChild(button);
@@ -644,7 +648,7 @@
   }
 
   function showGameHub() {
-    showScreen(APP_SCREENS.GAME_HUB);
+    showView(APP_VIEWS.HUB, null);
   }
 
   function registerServiceWorker() {
@@ -663,16 +667,15 @@
   }
 
   function showPokerMenu() {
-    menuContinueButton.disabled = !isLoadableGame(storage.loadGame());
-    showScreen(APP_SCREENS.POKER_MENU);
+    openGameMenu(POKER_GAME_TYPE);
   }
 
   function showSetup() {
-    showScreen(APP_SCREENS.POKER_SETUP);
+    showView(APP_VIEWS.SETUP, POKER_GAME_TYPE);
   }
 
   function showGame() {
-    showScreen(APP_SCREENS.POKER_GAME);
+    showView(APP_VIEWS.GAME, POKER_GAME_TYPE);
     autoResolveRemainingActuals();
     persistCurrentGame();
     renderGame();
@@ -691,7 +694,7 @@
     renderRoundOrderStatus();
     renderCurrentTurnAction();
     renderTable();
-    resultsButton.classList.toggle("hidden", !gameState.chronologyComplete);
+    pokerResultsButton.classList.toggle("hidden", !gameState.chronologyComplete);
   }
 
   function renderFinalResultsModal() {
@@ -699,14 +702,14 @@
     const winners = standings.filter(function (standing) {
       return standing.place === 1;
     });
-    finalResultsTitle.textContent = winners.length === 1 ? "ПЕРЕМОЖЕЦЬ" : "ПЕРЕМОЖЦІ";
-    finalWinnerNames.textContent = winners
+    pokerFinalResultsTitle.textContent = winners.length === 1 ? "ПЕРЕМОЖЕЦЬ" : "ПЕРЕМОЖЦІ";
+    pokerFinalWinnerNames.textContent = winners
       .map(function (winner) {
         return winner.name;
       })
       .join(" • ");
-    finalWinnerScore.textContent = `${winners[0].finalScore} балів`;
-    finalStandings.replaceChildren();
+    pokerFinalWinnerScore.textContent = `${winners[0].finalScore} балів`;
+    pokerFinalStandings.replaceChildren();
 
     standings.forEach(function (standing) {
       const row = document.createElement("div");
@@ -725,12 +728,12 @@
       row.appendChild(place);
       row.appendChild(name);
       row.appendChild(score);
-      finalStandings.appendChild(row);
+      pokerFinalStandings.appendChild(row);
     });
   }
 
   function isFinalResultsOpen() {
-    return !finalResultsOverlay.classList.contains("hidden");
+    return !pokerFinalResultsOverlay.classList.contains("hidden");
   }
 
   function openFinalResultsModal() {
@@ -738,8 +741,8 @@
     persistCurrentGame();
     renderFinalResultsModal();
     resultsPreviousFocus = document.activeElement;
-    finalResultsOverlay.classList.remove("hidden");
-    finalResultsOverlay.setAttribute("aria-hidden", "false");
+    pokerFinalResultsOverlay.classList.remove("hidden");
+    pokerFinalResultsOverlay.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     autoOpenedResultsGameId = gameState.id;
     finalResultsDialog.focus();
@@ -747,12 +750,12 @@
   }
 
   function closeFinalResultsModal() {
-    finalResultsOverlay.classList.add("hidden");
-    finalResultsOverlay.setAttribute("aria-hidden", "true");
+    pokerFinalResultsOverlay.classList.add("hidden");
+    pokerFinalResultsOverlay.setAttribute("aria-hidden", "true");
     document.body.classList.remove("modal-open");
 
-    if (gameState && gameState.chronologyComplete && !resultsButton.classList.contains("hidden")) {
-      resultsButton.focus();
+    if (gameState && gameState.chronologyComplete && !pokerResultsButton.classList.contains("hidden")) {
+      pokerResultsButton.focus();
     } else if (resultsPreviousFocus && typeof resultsPreviousFocus.focus === "function") {
       resultsPreviousFocus.focus();
     }
@@ -775,14 +778,22 @@
   }
 
   function renderStatus() {
+    const activePlayer = getActivePlayer();
     const currentRoundDescriptor = getCurrentRoundDescriptor();
     const currentGameChoice = currentRoundDescriptor && poker.getOrderedGameChoiceDefinition(currentRoundDescriptor.gameChoice);
-    currentRoundLabel.textContent = currentRoundDescriptor
+    pokerCurrentRoundLabel.textContent = currentRoundDescriptor
       ? `${currentRoundDescriptor.label}${currentGameChoice ? ` ${currentGameChoice.symbol}` : ""}`
       : "";
     const dealerIndex = currentRoundDescriptor ? poker.getDealerIndex(currentRoundDescriptor.sequenceIndex, gameState.playerCount) : -1;
     const dealer = gameState.players[dealerIndex];
-    currentDealerLabel.textContent = dealer ? dealer.name : "-";
+    pokerCurrentDealerLabel.textContent = dealer ? dealer.name : "-";
+
+    if (gameState.chronologyComplete) {
+      pokerActivePlayerLabel.textContent = "Раунди завершено";
+      return;
+    }
+
+    pokerActivePlayerLabel.textContent = activePlayer ? activePlayer.name : "Добре";
   }
 
   function getCurrentRoundOrderStatus() {
@@ -798,26 +809,26 @@
   function renderRoundOrderStatus() {
     const status = getCurrentRoundOrderStatus();
     const visible = status.visible && !gameState.chronologyComplete;
-    roundOrderStatusBar.classList.toggle("hidden", !visible);
-    roundOrderStatus.classList.toggle("hidden", !visible);
+    pokerRoundOrderStatusBar.classList.toggle("hidden", !visible);
+    pokerRoundOrderStatus.classList.toggle("hidden", !visible);
 
     if (!visible) {
-      gamePanel.style.removeProperty("--round-order-status-clearance");
+      pokerGamePanel.style.removeProperty("--round-order-status-clearance");
       return;
     }
 
-    roundOrderProgress.textContent = `Замовлено: ${status.totalOrdered} / ${status.maximum}`;
-    roundOrderClassification.classList.remove("round-status--shortage", "round-status--overage");
-    roundOrderClassification.classList.toggle("hidden", !status.classification);
+    pokerRoundOrderProgress.textContent = `Замовлено: ${status.totalOrdered} / ${status.maximum}`;
+    pokerRoundOrderClassification.classList.remove("round-status--shortage", "round-status--overage");
+    pokerRoundOrderClassification.classList.toggle("hidden", !status.classification);
 
     if (status.classification === "shortage") {
-      roundOrderClassification.textContent = `НЕДОБОР: ${status.difference}`;
-      roundOrderClassification.classList.add("round-status--shortage");
+      pokerRoundOrderClassification.textContent = `НЕДОБОР: ${status.difference}`;
+      pokerRoundOrderClassification.classList.add("round-status--shortage");
     } else if (status.classification === "overage") {
-      roundOrderClassification.textContent = `ПЕРЕБОР: ${Math.abs(status.difference)}`;
-      roundOrderClassification.classList.add("round-status--overage");
+      pokerRoundOrderClassification.textContent = `ПЕРЕБОР: ${Math.abs(status.difference)}`;
+      pokerRoundOrderClassification.classList.add("round-status--overage");
     } else {
-      roundOrderClassification.textContent = "";
+      pokerRoundOrderClassification.textContent = "";
     }
 
     requestAnimationFrame(syncRoundOrderStatusClearance);
@@ -843,40 +854,26 @@
       return { visible: false };
     }
 
-    let remainingActual = null;
-    if (phase === "actual") {
-      const roundMaximum = poker.getRoundMaximum(gameState, gameState.currentRoundKey);
-      remainingActual = poker.getRemainingActualTricks(roundMaximum, getSavedActualValues(gameState.currentRoundKey));
-    }
-
     return {
       visible: true,
       enabled: phase === gameState.currentPhase,
-      phase,
       playerName: activePlayer.name,
       buttonLabel: phase === "order" ? "Замовити" : "Взято",
-      remainingActual,
     };
   }
 
   function renderCurrentTurnAction() {
     const actionState = getCurrentTurnActionState();
-    currentTurnAction.classList.toggle("hidden", !actionState.visible);
+    pokerCurrentTurnAction.classList.toggle("hidden", !actionState.visible);
 
     if (!actionState.visible) {
-      currentTurnButton.disabled = true;
-      currentTurnRemaining.classList.add("hidden");
-      currentTurnRemaining.textContent = "";
+      pokerCurrentTurnButton.disabled = true;
       return;
     }
 
-    currentTurnPlayer.textContent = actionState.playerName;
-    currentTurnButton.textContent = actionState.buttonLabel;
-    currentTurnButton.disabled = !actionState.enabled;
-
-    const showRemaining = actionState.phase === "actual" && actionState.remainingActual !== null;
-    currentTurnRemaining.classList.toggle("hidden", !showRemaining);
-    currentTurnRemaining.textContent = showRemaining ? `Залишилось взяток: ${actionState.remainingActual}` : "";
+    pokerCurrentTurnPlayer.textContent = actionState.playerName;
+    pokerCurrentTurnButton.textContent = actionState.buttonLabel;
+    pokerCurrentTurnButton.disabled = !actionState.enabled;
   }
 
   function renderTable() {
@@ -884,7 +881,7 @@
     const body = document.createElement("tbody");
     const headerRow = document.createElement("tr");
 
-    headerRow.innerHTML = `<th class="round-header"></th>`;
+    headerRow.innerHTML = `<th class="round-header">Гра</th>`;
     gameState.players.forEach(function (player) {
       headerRow.innerHTML += `<th class="player-header" colspan="2">${escapeHtml(player.name)}</th>`;
     });
@@ -902,7 +899,7 @@
       body.appendChild(row);
     });
 
-    scoreTable.replaceChildren(header, body);
+    pokerScoreTable.replaceChildren(header, body);
   }
 
   function createRoundLabelCell(descriptor) {
@@ -1142,14 +1139,14 @@
   }
 
   function openNumberPicker(options) {
-    numberPickerTitle.textContent = options.title;
-    numberPickerPlayer.textContent = options.playerName;
-    numberPickerOrderContext.textContent = options.orderContext || "";
-    numberPickerOrderContext.classList.toggle("hidden", !options.orderContext);
-    numberPickerGameChoiceSection.classList.toggle("hidden", !options.requiresGameChoice);
-    numberPickerPlayerSection.classList.toggle("hidden", options.playerOptions.length === 0);
-    numberPickerGameChoices.innerHTML = "";
-    numberPickerPlayers.innerHTML = "";
+    pokerNumberPickerTitle.textContent = options.title;
+    pokerNumberPickerPlayer.textContent = options.playerName;
+    pokerNumberPickerOrderContext.textContent = options.orderContext || "";
+    pokerNumberPickerOrderContext.classList.toggle("hidden", !options.orderContext);
+    pokerNumberPickerGameChoiceSection.classList.toggle("hidden", !options.requiresGameChoice);
+    pokerNumberPickerPlayerSection.classList.toggle("hidden", options.playerOptions.length === 0);
+    pokerNumberPickerGameChoices.innerHTML = "";
+    pokerNumberPickerPlayers.innerHTML = "";
     let selectedGameChoice = poker.normalizeOrderedGameChoice(options.selectedGameChoice);
 
     options.playerOptions.forEach(function (playerOption) {
@@ -1174,7 +1171,7 @@
           options.onPlayerSelect(playerOption.playerId);
         });
       }
-      numberPickerPlayers.appendChild(button);
+      pokerNumberPickerPlayers.appendChild(button);
     });
 
     if (options.requiresGameChoice) {
@@ -1187,7 +1184,7 @@
         button.type = "button";
         button.setAttribute("aria-label", choice.name);
         button.innerHTML = `${content}<span class="game-choice-check" aria-hidden="true">✓</span>`;
-        numberPickerGameChoices.appendChild(button);
+        pokerNumberPickerGameChoices.appendChild(button);
         return { button, choice };
       });
 
@@ -1209,8 +1206,8 @@
       renderSelectedGameChoice();
     }
 
-    numberPickerOverlay.classList.remove("hidden");
-    numberPickerOverlay.setAttribute("aria-hidden", "false");
+    pokerNumberPickerOverlay.classList.remove("hidden");
+    pokerNumberPickerOverlay.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
     wheelPicker.configure({
       values: options.values,
@@ -1226,20 +1223,20 @@
   }
 
   function closeNumberPicker() {
-    numberPickerOverlay.classList.add("hidden");
-    numberPickerOverlay.setAttribute("aria-hidden", "true");
+    pokerNumberPickerOverlay.classList.add("hidden");
+    pokerNumberPickerOverlay.setAttribute("aria-hidden", "true");
     document.body.classList.remove("modal-open");
-    numberPickerGameChoiceSection.classList.add("hidden");
-    numberPickerPlayerSection.classList.add("hidden");
-    numberPickerGameChoices.innerHTML = "";
-    numberPickerPlayers.innerHTML = "";
+    pokerNumberPickerGameChoiceSection.classList.add("hidden");
+    pokerNumberPickerPlayerSection.classList.add("hidden");
+    pokerNumberPickerGameChoices.innerHTML = "";
+    pokerNumberPickerPlayers.innerHTML = "";
     wheelPicker.reset();
     orderEditTurnIndex = null;
     actualPickerPlayerId = null;
   }
 
   function isNumberPickerOpen() {
-    return !numberPickerOverlay.classList.contains("hidden");
+    return !pokerNumberPickerOverlay.classList.contains("hidden");
   }
 
   function openCurrentTurnNumberPicker() {
@@ -1698,10 +1695,10 @@
     radio.addEventListener("change", renderPlayerNameFields);
   });
 
-  currentTurnButton.addEventListener("click", openCurrentTurnNumberPicker);
-  numberPickerCloseButton.addEventListener("click", closeNumberPicker);
-  numberPickerOverlay.addEventListener("click", function (event) {
-    if (event.target === numberPickerOverlay) {
+  pokerCurrentTurnButton.addEventListener("click", openCurrentTurnNumberPicker);
+  pokerNumberPickerCloseButton.addEventListener("click", closeNumberPicker);
+  pokerNumberPickerOverlay.addEventListener("click", function (event) {
+    if (event.target === pokerNumberPickerOverlay) {
       closeNumberPicker();
     }
   });
@@ -1715,7 +1712,7 @@
     }
 
     if (event.key === "Tab" && isFinalResultsOpen()) {
-      const focusable = [finalNewGameButton, finalExitButton];
+      const focusable = [pokerFinalNewGameButton, pokerFinalExitButton];
       const currentIndex = focusable.indexOf(document.activeElement);
       const nextIndex = event.shiftKey
         ? currentIndex <= 0
@@ -1729,45 +1726,38 @@
     }
   });
 
-  resultsButton.addEventListener("click", openFinalResultsModal);
-  finalExitButton.addEventListener("click", closeFinalResultsModal);
-  finalNewGameButton.addEventListener("click", function () {
+  pokerResultsButton.addEventListener("click", openFinalResultsModal);
+  pokerFinalExitButton.addEventListener("click", closeFinalResultsModal);
+  pokerFinalNewGameButton.addEventListener("click", function () {
     startNewGameSetup();
   });
 
-  startGameButton.addEventListener("click", function () {
+  pokerStartButton.addEventListener("click", function () {
     gameState = createGameState();
     storage.saveGame(gameState);
     showGame();
   });
 
-  menuContinueButton.addEventListener("click", function () {
+  function hasPokerSavedGame() {
+    return isLoadableGame(storage.loadGame());
+  }
+
+  function continuePokerGame() {
     gameState = normalizeLoadedGame(storage.loadGame());
     if (gameState) {
       storage.saveGame(gameState);
       showGame();
     }
-  });
+  }
 
-  newGameButton.addEventListener("click", function () {
-    if (
-      gameState &&
-      !gameState.chronologyComplete &&
-      !window.confirm("Початок нової гри замінить поточну незавершену гру. Історія завершених ігор збережеться. Продовжити?")
-    ) {
-      return;
-    }
-    startNewGameSetup({ preserveCurrentUntilStart: true });
-  });
-
-  gameMenuButton.addEventListener("click", function () {
+  pokerGameMenuButton.addEventListener("click", function () {
     persistCurrentGame();
     closeNumberPicker();
     if (isFinalResultsOpen()) closeFinalResultsModal();
     showPokerMenu();
   });
 
-  menuNewGameButton.addEventListener("click", function () {
+  function requestPokerNewGame() {
     const savedGame = storage.loadGame();
     if (
       isLoadableGame(savedGame) &&
@@ -1778,18 +1768,39 @@
       return;
     }
     startNewGameSetup({ preserveCurrentUntilStart: true });
-  });
+  }
 
-  menuBackButton.addEventListener("click", showGameHub);
-  setupBackButton.addEventListener("click", showPokerMenu);
+  pokerSetupBackButton.addEventListener("click", showPokerMenu);
+
+  gameMenuPanel.addEventListener("click", function (event) {
+    const command = event.target.closest("[data-action]");
+    if (!command || !gameMenuPanel.contains(command)) return;
+    const action = command.dataset.action;
+    if (action === "back-to-hub") {
+      showGameHub();
+      return;
+    }
+    const controller = gameControllers.get(activeGameId);
+    const methodByAction = {
+      "new-game": "requestNewGame",
+      "continue-game": "continueGame",
+    };
+    const method = methodByAction[action];
+    if (controller && method && typeof controller[method] === "function") controller[method]();
+  });
 
   renderPlayerNameFields();
   mariageController = mariage.initialize({
     storage,
-    screens: APP_SCREENS,
-    navigate: showScreen,
-    showHub: showGameHub,
+    navigate: function (view) { showView(view, mariage.GAME_TYPE); },
+    showMenu: function () { openGameMenu(mariage.GAME_TYPE); },
   });
+  gameControllers.set(POKER_GAME_TYPE, {
+    hasSavedGame: hasPokerSavedGame,
+    requestNewGame: requestPokerNewGame,
+    continueGame: continuePokerGame,
+  });
+  gameControllers.set(mariage.GAME_TYPE, mariageController);
   renderGameRegistry();
   showGameHub();
   registerServiceWorker();

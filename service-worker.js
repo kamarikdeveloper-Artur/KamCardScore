@@ -1,12 +1,14 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v20`;
+const CACHE_NAME = `${CACHE_PREFIX}v24`;
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./css/style.css",
+  "./css/poker.css",
+  "./css/mariage.css",
   "./js/storage.js",
   "./js/games/poker.js",
   "./js/games/mariage-config.js",
@@ -16,11 +18,11 @@ const APP_SHELL = [
   "./js/components/wheel-picker.js",
   "./js/app.js",
   "./data/mariage-help.uk.json",
-  "./assets/backgrounds/img-bg-main.png",
+  "./assets/backgrounds/img-bg-main.jpg",
   "./assets/suits/icon-spades.svg",
   "./assets/suits/icon-hearts.svg",
-  "./assets/suits/icon-clubs.svg",
-  "./assets/suits/icon-diamonds.svg",
+  "./assets/suits/clubs.svg",
+  "./assets/suits/diamonds.svg",
   "./assets/icons/img-app-192.png",
   "./assets/icons/img-app-256.png",
   "./assets/icons/img-app-512.png",

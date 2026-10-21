@@ -30,8 +30,8 @@
     function isSelectedValueAllowed() {
       return Boolean(
         configuration &&
-        configuration.isValueAllowed(selectedValue) &&
-        externalConfirmationAllowed,
+          configuration.isValueAllowed(selectedValue) &&
+          externalConfirmationAllowed,
       );
     }
 
@@ -132,10 +132,7 @@
         item.dataset.value = String(value);
         item.textContent = String(value);
         item.setAttribute("aria-disabled", String(!isAllowed));
-        item.setAttribute(
-          "aria-label",
-          `${value}, ${isAllowed ? "доступно" : "недоступно"}`,
-        );
+        item.setAttribute("aria-label", `${value}, ${isAllowed ? "доступно" : "недоступно"}`);
         item.addEventListener("click", function () {
           setSelectedValue(value, "smooth");
         });
@@ -173,10 +170,7 @@
 
     viewport.addEventListener("scroll", handleScroll, { passive: true });
     viewport.addEventListener("keydown", function (event) {
-      if (
-        !configuration ||
-        !["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)
-      ) {
+      if (!configuration || !["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
         return;
       }
       event.preventDefault();

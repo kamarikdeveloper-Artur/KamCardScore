@@ -6,6 +6,10 @@
   const GAME_HISTORY_KEY = "cardscore.gameHistory";
   const POKER_GAME_TYPE = "poker";
   const LEGACY_POKER_GAME_TYPE = "poker" + "ochok";
+  const CURRENT_GAME_KEYS = Object.freeze({
+    poker: CURRENT_GAME_KEY,
+    mariage: MARIAGE_CURRENT_GAME_KEY,
+  });
 
   function normalizeGameType(gameType) {
     if (!gameType || gameType === LEGACY_POKER_GAME_TYPE) return POKER_GAME_TYPE;
@@ -13,7 +17,8 @@
   }
 
   function getCurrentGameKey(gameType) {
-    return gameType === "mariage" ? MARIAGE_CURRENT_GAME_KEY : CURRENT_GAME_KEY;
+    const normalizedGameType = normalizeGameType(gameType);
+    return CURRENT_GAME_KEYS[normalizedGameType] || `cardscore.currentGame.${normalizedGameType}`;
   }
 
   function saveGameByType(gameType, gameState) {
@@ -95,6 +100,7 @@
   window.CardScoreStorage = {
     CURRENT_GAME_KEY,
     MARIAGE_CURRENT_GAME_KEY,
+    CURRENT_GAME_KEYS,
     GAME_HISTORY_KEY,
     POKER_GAME_TYPE,
     normalizeGameType,
