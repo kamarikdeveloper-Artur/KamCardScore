@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/poker.css" />
     <link rel="stylesheet" href="css/mariage.css" />
     <script defer src="js/storage.js"></script>
+    <script defer src="js/components/player-name-fields.js"></script>
     <script defer src="js/games/poker.js"></script>
     <script defer src="js/games/mariage-config.js"></script>
     <script defer src="js/games/mariage-icons.js"></script>
@@ -48,22 +49,22 @@
       <section class="setup-panel hidden" id="mariageSetupPanel" data-view="setup" data-game-id="mariage">
         <div class="main-title"><h1>Мар'яж</h1></div>
         <fieldset class="player-count" id="mariagePlayerCount">
-          <legend class="player-count-title">Кількість гравців</legend>
+          <legend class="player-count-title">Кількість гравців:</legend>
           <label><input type="radio" name="mariagePlayerCount" value="3" checked /><span>3</span></label>
           <label><input type="radio" name="mariagePlayerCount" value="4" /><span>4</span></label>
         </fieldset>
         <fieldset class="game-length">
-          <legend>Лижа</legend>
+          <legend>Лижа:</legend>
           <label><input type="radio" name="mariageSkiMode" value="three" /><span>Три: −100</span></label>
           <label><input type="radio" name="mariageSkiMode" value="immediate" checked /><span>Одна: −50</span></label>
         </fieldset>
         <fieldset class="game-length">
-          <legend>Розпис</legend>
+          <legend>Розпис:</legend>
           <label><input type="radio" name="mariageRepaintMode" value="three" checked /><span>Три: −120</span></label>
           <label><input type="radio" name="mariageRepaintMode" value="immediate" /><span>Один: −60</span></label>
         </fieldset>
         <fieldset class="game-length">
-          <legend>Додаткові правила</legend>
+          <legend>Додаткові правила:</legend>
           <label><input id="mariageExact555Reset" type="checkbox" checked /><span>Рівно 555 → 0</span></label>
         </fieldset>
         <div class="name-grid" id="mariagePlayerNameFields"></div>
@@ -80,16 +81,18 @@
             <h1>Мар'яж</h1>
           </div>
           <div class="game-actions">
-            <button class="secondary-button" id="mariageSettingsButton" type="button" title="Налаштування гри">
-              <img src="assets/icons/icon-settings.svg" alt="" />
+            <button class="btn-settings" id="mariageSettingsButton" type="button" title="Налаштування гри">
+              <img class="icon-settings" src="assets/icons/icon-settings.svg" alt="" />
             </button>
-            <button class="secondary-button" id="mariageGameMenuButton" type="button">Меню</button>
+            <button class="btn-menu-burger" id="mariageGameMenuButton" type="button">
+              <img class="icon-menu-burger" src="/assets/icons/icon-menu-burger.svg" alt="" />
+            </button>
           </div>
         </header>
         <section class="status-strip" aria-live="polite">
-          <div><span class="status-label">Раунд</span><strong id="mariageRoundLabel">0</strong></div>
-          <div><span class="status-label">Заказує</span><strong id="mariageOrderingLabel">—</strong></div>
-          <div><span class="status-label">Заказ</span><strong id="mariageOrderLabel">—</strong></div>
+          <div><span class="status-label">Раунд:</span><strong class="status-label-value" id="mariageRoundLabel">0</strong></div>
+          <div><span class="status-label">Заказує:</span><strong class="status-label-value" id="mariageOrderingLabel">-</strong></div>
+          <div><span class="status-label">Заказ:</span><strong class="status-label-value" id="mariageOrderLabel">-</strong></div>
           <div class="hidden" id="mariageBarrelStatus">
             <span class="status-label"
               >Бочка <button class="mariage-info-button" type="button" data-mariage-help="barrel" aria-label="Пояснення: Бочка">ⓘ</button> </span
@@ -311,7 +314,7 @@
         </div>
 
         <fieldset class="player-count">
-          <legend class="player-count-title">Кількість гравців</legend>
+          <legend class="player-count-title">Кількість гравців:</legend>
           <label>
             <input type="radio" name="playerCount" value="2" />
             <span>2</span>
@@ -327,7 +330,7 @@
         </fieldset>
 
         <fieldset class="game-length">
-          <legend>Режим гри</legend>
+          <legend>Режим гри:</legend>
           <label>
             <input type="radio" name="gameLength" value="short" />
             <span id="pokerShortGameLabel">Скорочена 1-4</span>
@@ -364,15 +367,15 @@
         <section class="status-strip" aria-live="polite">
           <div>
             <span class="status-label">Раунд:</span>
-            <strong id="pokerCurrentRoundLabel">1</strong>
+            <strong class="status-label-value" id="pokerCurrentRoundLabel">1</strong>
           </div>
           <div>
             <span class="status-label">Роздає:</span>
-            <strong id="pokerCurrentDealerLabel">Гравець 1</strong>
+            <strong class="status-label-value" id="pokerCurrentDealerLabel">Гравець 1</strong>
           </div>
           <div>
             <span class="status-label">Обяз:</span>
-            <strong id="pokerActivePlayerLabel">Гравець 1</strong>
+            <strong class="status-label-value" id="pokerActivePlayerLabel">Гравець 1</strong>
           </div>
         </section>
 
@@ -403,7 +406,9 @@
               <strong id="pokerNumberPickerPlayer">Гравець 1</strong>
               <p class="number-picker-order-context hidden" id="pokerNumberPickerOrderContext"></p>
             </div>
-            <button class="icon-button" id="pokerNumberPickerCloseButton" type="button" aria-label="Close">x</button>
+            <button class="btn-close" id="pokerNumberPickerCloseButton" type="button" aria-label="Close">
+              <img class="icon-close" src="/assets/icons/icon-X-close.svg" alt="" />
+            </button>
           </div>
           <div class="game-choice-section hidden" id="pokerNumberPickerGameChoiceSection">
             <span class="status-label">Оберіть гру</span>

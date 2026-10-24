@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v24`;
+const CACHE_NAME = `${CACHE_PREFIX}v25`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -10,6 +10,7 @@ const APP_SHELL = [
   "./css/poker.css",
   "./css/mariage.css",
   "./js/storage.js",
+  "./js/components/player-name-fields.js",
   "./js/games/poker.js",
   "./js/games/mariage-config.js",
   "./js/games/mariage-icons.js",

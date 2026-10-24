@@ -4,6 +4,7 @@
   const CONFIG = window.MARIAGE_CONFIG;
   const STATUS_ICONS = window.MariageStatusIcons;
   const HELP = window.MariageHelp;
+  const playerNameFields = window.CardScorePlayerNameFields;
   if (!CONFIG) throw new Error("Mariage rules configuration is unavailable");
   if (!STATUS_ICONS) throw new Error("Mariage status icon system is unavailable");
   const GAME_TYPE = "mariage";
@@ -11,7 +12,7 @@
   const SUPPORTED_PLAYER_COUNTS = CONFIG.supportedPlayerCounts;
   const MAXIMUM_POINTS_BY_PLAYER_COUNT = Object.freeze({
     3: CONFIG.players[3].maxRoundPoints,
-    4: CONFIG.players[4].maxRoundPoints
+    4: CONFIG.players[4].maxRoundPoints,
   });
   const BARREL_ENTRY_SCORE = CONFIG.barrel.entryScore;
   const BARREL_WIN_SCORE = CONFIG.barrel.winningScore;
@@ -24,7 +25,7 @@
     return players.reduce(function (map, player) {
       map[player.id] = {
         ski: { count: 0, cycleId: 1 },
-        repaint: { count: 0, cycleId: 1 }
+        repaint: { count: 0, cycleId: 1 },
       };
       return map;
     }, {});
@@ -54,17 +55,21 @@
       skiMode: supplied.skiMode || options.skiMode || CONFIG.defaultRules.skiMode,
       repaint: {
         penaltyMode: repaint.penaltyMode || options.repaintMode || CONFIG.defaultRules.repaint.penaltyMode,
-        awardMode: repaint.awardMode || CONFIG.defaultRules.repaint.awardMode
+        awardMode: repaint.awardMode || CONFIG.defaultRules.repaint.awardMode,
       },
-      exact555Reset: supplied.exact555Reset === undefined
-        ? Boolean(options.exact555Reset) : Boolean(supplied.exact555Reset)
+      exact555Reset: supplied.exact555Reset === undefined ? Boolean(options.exact555Reset) : Boolean(supplied.exact555Reset),
     };
   }
 
   function isValidRules(rules) {
-    return Boolean(rules) && MODES.includes(rules.skiMode) && Boolean(rules.repaint) &&
-      MODES.includes(rules.repaint.penaltyMode) && CONFIG.repaintAwardModes.includes(rules.repaint.awardMode) &&
-      typeof rules.exact555Reset === "boolean";
+    return (
+      Boolean(rules) &&
+      MODES.includes(rules.skiMode) &&
+      Boolean(rules.repaint) &&
+      MODES.includes(rules.repaint.penaltyMode) &&
+      CONFIG.repaintAwardModes.includes(rules.repaint.awardMode) &&
+      typeof rules.exact555Reset === "boolean"
+    );
   }
 
   function normalizeGameRules(game) {
@@ -72,7 +77,7 @@
       game.rules = createRules({
         skiMode: game.settings && game.settings.skiMode,
         repaintMode: game.settings && game.settings.repaintMode,
-        exact555Reset: false
+        exact555Reset: false,
       });
     }
     game.settings = { skiMode: game.rules.skiMode, repaintMode: game.rules.repaint.penaltyMode };
@@ -100,7 +105,7 @@
       activeRound: null,
       status: "active",
       winnerPlayerId: null,
-      completedAt: null
+      completedAt: null,
     };
   }
 
@@ -129,8 +134,8 @@
         barrelState: JSON.parse(JSON.stringify(state.barrelState || createBarrelState(state.players))),
         gameStatus: state.status || "active",
         winnerPlayerId: state.winnerPlayerId || null,
-        completedAt: state.completedAt || null
-      }
+        completedAt: state.completedAt || null,
+      },
     };
   }
 
@@ -143,18 +148,28 @@
   function hasRoundResultEntryStarted(round) {
     if (!round) return false;
     const primary = round.primary || {};
-    return primary.resolution === "repaint" || primary.orderingResult !== null && primary.orderingResult !== undefined ||
-      primary.orderingActualPoints !== null && primary.orderingActualPoints !== undefined ||
+    return (
+      primary.resolution === "repaint" ||
+      (primary.orderingResult !== null && primary.orderingResult !== undefined) ||
+      (primary.orderingActualPoints !== null && primary.orderingActualPoints !== undefined) ||
       Boolean(primary.actuals && Object.keys(primary.actuals).length) ||
       Boolean(round.results && Object.keys(round.results).length) ||
-      Boolean(round.resolvedPlayerIds && round.resolvedPlayerIds.length) || Boolean(round.repaint);
+      Boolean(round.resolvedPlayerIds && round.resolvedPlayerIds.length) ||
+      Boolean(round.repaint)
+    );
   }
 
   function canReorderCurrentRound(state) {
     const round = state && state.activeRound;
-    return Boolean(round && state.status !== "completed" && round.status === "open" &&
-      round.orderingPlayerId && round.orderPoints !== null &&
-      ["physical-play", "results"].includes(round.phase) && !hasRoundResultEntryStarted(round));
+    return Boolean(
+      round &&
+      state.status !== "completed" &&
+      round.status === "open" &&
+      round.orderingPlayerId &&
+      round.orderPoints !== null &&
+      ["physical-play", "results"].includes(round.phase) &&
+      !hasRoundResultEntryStarted(round),
+    );
   }
 
   function reorderCurrentRound(state) {
@@ -204,8 +219,11 @@
       return { penalty: -CONFIG.ski.immediatePenalty, cycleNumber: null, cycleId: null };
     }
     skiState.count += 1;
-    const event = { penalty: skiState.count === CONFIG.ski.cycleLength ? -CONFIG.ski.cyclePenalty : 0,
-      cycleNumber: skiState.count, cycleId: skiState.cycleId };
+    const event = {
+      penalty: skiState.count === CONFIG.ski.cycleLength ? -CONFIG.ski.cyclePenalty : 0,
+      cycleNumber: skiState.count,
+      cycleId: skiState.cycleId,
+    };
     if (skiState.count === CONFIG.ski.cycleLength) {
       skiState.count = 0;
       skiState.cycleId += 1;
@@ -219,8 +237,11 @@
       return { penalty: -CONFIG.repaint.immediatePenalty, cycleNumber: null, cycleId: null };
     }
     repaintState.count += 1;
-    const event = { penalty: repaintState.count === CONFIG.repaint.cycleLength ? -CONFIG.repaint.cyclePenalty : 0,
-      cycleNumber: repaintState.count, cycleId: repaintState.cycleId };
+    const event = {
+      penalty: repaintState.count === CONFIG.repaint.cycleLength ? -CONFIG.repaint.cyclePenalty : 0,
+      cycleNumber: repaintState.count,
+      cycleId: repaintState.cycleId,
+    };
     if (repaintState.count === CONFIG.repaint.cycleLength) {
       repaintState.count = 0;
       repaintState.cycleId += 1;
@@ -229,7 +250,9 @@
   }
 
   function getPlayer(state, playerId) {
-    return state.players.find(function (player) { return player.id === playerId; });
+    return state.players.find(function (player) {
+      return player.id === playerId;
+    });
   }
 
   function buildResult(state, playerId, options) {
@@ -239,7 +262,7 @@
       bite: Boolean(options.bite),
       ski: Boolean(options.ski),
       repaint: Boolean(options.repaint),
-      repaintBeneficiary: Boolean(options.repaintBeneficiary)
+      repaintBeneficiary: Boolean(options.repaintBeneficiary),
     };
     const result = {
       playerId,
@@ -251,7 +274,7 @@
       skiCycleId: options.skiCycleId || null,
       repaintCycleNumber: options.repaintCycleNumber || null,
       repaintCycleId: options.repaintCycleId || null,
-      scoreSourcePlayerId: options.scoreSourcePlayerId || null
+      scoreSourcePlayerId: options.scoreSourcePlayerId || null,
     };
     player.score = result.cumulativeScore;
     return result;
@@ -272,19 +295,21 @@
   function isValidOrderPoints(playerCount, orderPoints) {
     const value = Number(orderPoints);
     const rules = CONFIG.players[Number(playerCount)];
-    return Boolean(rules) && Number.isFinite(value) && value >= rules.minOrder &&
-      value <= rules.maxOrder && value % CONFIG.orderStep === 0;
+    return Boolean(rules) && Number.isFinite(value) && value >= rules.minOrder && value <= rules.maxOrder && value % CONFIG.orderStep === 0;
   }
 
   function getBarrelHolder(state) {
-    return state.players.find(function (player) {
-      return state.barrelState && state.barrelState[player.id] && state.barrelState[player.id].onBarrel;
-    }) || null;
+    return (
+      state.players.find(function (player) {
+        return state.barrelState && state.barrelState[player.id] && state.barrelState[player.id].onBarrel;
+      }) || null
+    );
   }
 
   function getMinimumOrder(state, playerId) {
     return state.barrelState && state.barrelState[playerId] && state.barrelState[playerId].onBarrel
-      ? BARREL_MINIMUM_ORDER : CONFIG.players[state.playerCount].minOrder;
+      ? BARREL_MINIMUM_ORDER
+      : CONFIG.players[state.playerCount].minOrder;
   }
 
   function isValidOrderForPlayer(state, playerId, orderPoints) {
@@ -300,8 +325,11 @@
   function setOrderingActualPoints(round, playerCount, points) {
     if (!round || !round.primary || round.primary.resolution !== "normal") throw new Error("Factual points require a normal round");
     if (points !== null && points !== undefined && points !== "") {
-      if (!Number.isInteger(Number(points)) || !isValidActualPoints(playerCount, points) ||
-        (round.primary.orderingResult === "taken" && Number(points) < round.orderPoints)) {
+      if (
+        !Number.isInteger(Number(points)) ||
+        !isValidActualPoints(playerCount, points) ||
+        (round.primary.orderingResult === "taken" && Number(points) < round.orderPoints)
+      ) {
         throw new Error("Invalid ordering-player factual points");
       }
       round.primary.orderingActualPoints = Number(points);
@@ -357,7 +385,7 @@
       bite,
       ski,
       skiCycleNumber: skiEvent && skiEvent.cycleNumber,
-      skiCycleId: skiEvent && skiEvent.cycleId
+      skiCycleId: skiEvent && skiEvent.cycleId,
     });
   }
 
@@ -370,9 +398,13 @@
     state.players.forEach(function (player) {
       if (hasPrimaryResult(round, player.id)) applyCollectedPlayerResult(state, round, player.id);
     });
-    round.resolvedPlayerIds = state.players.filter(function (player) {
-      return Boolean(round.results[player.id]);
-    }).map(function (player) { return player.id; });
+    round.resolvedPlayerIds = state.players
+      .filter(function (player) {
+        return Boolean(round.results[player.id]);
+      })
+      .map(function (player) {
+        return player.id;
+      });
   }
 
   function resolvePlayerResult(state, playerId, actualPoints, quickAction) {
@@ -394,8 +426,12 @@
       round.primary.orderingResult = quickAction === "bite-ski" ? "bite_ski" : quickAction;
     } else {
       if (quickAction === "ski") actualPoints = 0;
-      if (actualPoints === null || actualPoints === undefined || String(actualPoints).trim() === "" ||
-        !isValidActualPoints(state.playerCount, actualPoints)) {
+      if (
+        actualPoints === null ||
+        actualPoints === undefined ||
+        String(actualPoints).trim() === "" ||
+        !isValidActualPoints(state.playerCount, actualPoints)
+      ) {
         throw new Error("Actual points are outside the allowed range");
       }
       round.primary.actuals[player.id] = { action: "actual", actualPoints: Number(actualPoints) };
@@ -419,8 +455,7 @@
     const round = state.activeRound;
     const isEarlyRepaint = Boolean(round && round.phase === "ordering-player" && earlyOrderingPlayerId);
     if (isEarlyRepaint && !getPlayer(state, earlyOrderingPlayerId)) throw new Error("Unknown Mariage player");
-    if (!round || !["ordering-player", "physical-play", "results"].includes(round.phase) ||
-      (!round.orderingPlayerId && !isEarlyRepaint)) {
+    if (!round || !["ordering-player", "physical-play", "results"].includes(round.phase) || (!round.orderingPlayerId && !isEarlyRepaint)) {
       throw new Error("Repaint is unavailable");
     }
     if (isEarlyRepaint) {
@@ -444,7 +479,7 @@
         repaintBeneficiary: !isOrderingPlayer,
         repaintCycleNumber: isOrderingPlayer ? repaintEvent.cycleNumber : null,
         repaintCycleId: isOrderingPlayer ? repaintEvent.cycleId : null,
-        scoreSourcePlayerId: isOrderingPlayer ? null : round.orderingPlayerId
+        scoreSourcePlayerId: isOrderingPlayer ? null : round.orderingPlayerId,
       });
     });
     round.resolvedPlayerIds = getResolvedPlayerIds(round);
@@ -453,20 +488,27 @@
   }
 
   function getBarrelCandidates(state, round, excludedPlayerId) {
-    return state.players.filter(function (player) {
-      return player.id !== excludedPlayerId && player.score >= BARREL_ENTRY_SCORE;
-    }).map(function (player) {
-      const input = round.primary.actuals[player.id];
-      return {
-        playerId: player.id,
-        rawScore: player.score,
-        preRoundScore: round.startState.scores[player.id],
-        isOrderingPlayer: player.id === round.orderingPlayerId,
-        factualPoints: round.primary.resolution === "repaint" ? 0 : player.id === round.orderingPlayerId
-          ? round.primary.orderingActualPoints
-          : input && input.action === "actual" ? Number(input.actualPoints) : null
-      };
-    });
+    return state.players
+      .filter(function (player) {
+        return player.id !== excludedPlayerId && player.score >= BARREL_ENTRY_SCORE;
+      })
+      .map(function (player) {
+        const input = round.primary.actuals[player.id];
+        return {
+          playerId: player.id,
+          rawScore: player.score,
+          preRoundScore: round.startState.scores[player.id],
+          isOrderingPlayer: player.id === round.orderingPlayerId,
+          factualPoints:
+            round.primary.resolution === "repaint"
+              ? 0
+              : player.id === round.orderingPlayerId
+                ? round.primary.orderingActualPoints
+                : input && input.action === "actual"
+                  ? Number(input.actualPoints)
+                  : null,
+        };
+      });
   }
 
   function setPostTransitionScore(state, round, playerId, score) {
@@ -477,13 +519,19 @@
   function buildBarrelEntryOrder(state, round, candidates) {
     if (!candidates.length) return { entryOrder: [], factualRequiredPlayerId: null };
     if (candidates.length === 1) return { entryOrder: candidates.slice(), factualRequiredPlayerId: null };
-    const orderingCandidate = candidates.find(function (candidate) { return candidate.isOrderingPlayer; });
+    const orderingCandidate = candidates.find(function (candidate) {
+      return candidate.isOrderingPlayer;
+    });
     if (orderingCandidate && (orderingCandidate.factualPoints === null || orderingCandidate.factualPoints === undefined)) {
       return { entryOrder: [], factualRequiredPlayerId: orderingCandidate.playerId };
     }
-    const orderingIndex = state.players.findIndex(function (player) { return player.id === round.orderingPlayerId; });
+    const orderingIndex = state.players.findIndex(function (player) {
+      return player.id === round.orderingPlayerId;
+    });
     const cyclicOffset = function (candidate) {
-      const playerIndex = state.players.findIndex(function (player) { return player.id === candidate.playerId; });
+      const playerIndex = state.players.findIndex(function (player) {
+        return player.id === candidate.playerId;
+      });
       return (playerIndex - orderingIndex + state.players.length) % state.players.length;
     };
     const entryOrder = candidates.slice().sort(function (a, b) {
@@ -512,15 +560,15 @@
   function processBarrelTransitions(state, round) {
     state.barrelState = state.barrelState || createBarrelState(state.players);
     round.barrel = { entryOrder: [], exits: [], winnerPlayerId: null };
-    const startHolderId = Object.keys(round.startState.barrelState || {}).find(function (playerId) {
-      return round.startState.barrelState[playerId].onBarrel;
-    }) || null;
+    const startHolderId =
+      Object.keys(round.startState.barrelState || {}).find(function (playerId) {
+        return round.startState.barrelState[playerId].onBarrel;
+      }) || null;
     const holder = startHolderId ? getPlayer(state, startHolderId) : null;
     const holderResult = holder && round.results[holder.id];
     const holderIsOrdering = holder && holder.id === round.orderingPlayerId;
 
-    if (holderIsOrdering && holderResult && round.primary.resolution === "normal" &&
-      round.primary.orderingResult === "taken") {
+    if (holderIsOrdering && holderResult && round.primary.resolution === "normal" && round.primary.orderingResult === "taken") {
       setPostTransitionScore(state, round, holder.id, BARREL_WIN_SCORE);
       state.status = "completed";
       state.winnerPlayerId = holder.id;
@@ -534,8 +582,7 @@
     if (sequence.factualRequiredPlayerId) return { completed: false, factualRequiredPlayerId: sequence.factualRequiredPlayerId };
 
     let holderExited = false;
-    if (holderIsOrdering && holderResult && round.primary.resolution === "normal" &&
-      ["bite", "bite_ski"].includes(round.primary.orderingResult)) {
+    if (holderIsOrdering && holderResult && round.primary.resolution === "normal" && ["bite", "bite_ski"].includes(round.primary.orderingResult)) {
       registerBarrelExit(state, holder.id, holder.score, "failed-order", round);
       holderExited = true;
     } else if (holder) {
@@ -594,15 +641,16 @@
       results[player.id] = round.results[player.id];
       return results;
     }, {});
-    round.resolvedPlayerIds = state.players.map(function (player) { return player.id; });
+    round.resolvedPlayerIds = state.players.map(function (player) {
+      return player.id;
+    });
     state.rounds.push(round);
     state.activeRound = null;
     return true;
   }
 
   function getRoundPrimary(round) {
-    const primary = round.primary ? JSON.parse(JSON.stringify(round.primary)) :
-      { resolution: round.repaint ? "repaint" : "normal", actuals: {} };
+    const primary = round.primary ? JSON.parse(JSON.stringify(round.primary)) : { resolution: round.repaint ? "repaint" : "normal", actuals: {} };
     primary.actuals = primary.actuals || {};
     if (primary.resolution === "repaint") {
       primary.actuals = {};
@@ -610,20 +658,26 @@
       primary.orderingActualPoints = null;
       return primary;
     }
-    if (!round.primary) Object.keys(round.results || {}).forEach(function (playerId) {
-      const result = round.results[playerId];
-      if (result.actualPoints === null && result.semantic && result.semantic.bite && !result.semantic.ski) {
-        primary.actuals[playerId] = { action: "bite", actualPoints: null };
-      } else {
-        primary.actuals[playerId] = { action: "actual", actualPoints: result.actualPoints };
-      }
-    });
+    if (!round.primary)
+      Object.keys(round.results || {}).forEach(function (playerId) {
+        const result = round.results[playerId];
+        if (result.actualPoints === null && result.semantic && result.semantic.bite && !result.semantic.ski) {
+          primary.actuals[playerId] = { action: "bite", actualPoints: null };
+        } else {
+          primary.actuals[playerId] = { action: "actual", actualPoints: result.actualPoints };
+        }
+      });
     if (!Object.prototype.hasOwnProperty.call(primary, "orderingResult")) {
       const oldInput = primary.actuals[round.orderingPlayerId];
       if (oldInput) {
-        primary.orderingResult = oldInput.action === "bite" ? "bite" :
-          Number(oldInput.actualPoints) >= round.orderPoints ? "taken" :
-            Number(oldInput.actualPoints) === 0 ? "bite_ski" : "bite";
+        primary.orderingResult =
+          oldInput.action === "bite"
+            ? "bite"
+            : Number(oldInput.actualPoints) >= round.orderPoints
+              ? "taken"
+              : Number(oldInput.actualPoints) === 0
+                ? "bite_ski"
+                : "bite";
         primary.orderingActualPoints = oldInput.action === "actual" ? oldInput.actualPoints : null;
         delete primary.actuals[round.orderingPlayerId];
       } else {
@@ -638,14 +692,17 @@
   function recalculateMariageGame(gameDraft) {
     const source = JSON.parse(JSON.stringify(gameDraft));
     normalizeGameRules(source);
-    if (!isSupportedPlayerCount(source.playerCount) || source.players.length !== source.playerCount ||
-      !isValidRules(source.rules)) {
+    if (!isSupportedPlayerCount(source.playerCount) || source.players.length !== source.playerCount || !isValidRules(source.rules)) {
       throw new Error("Некоректні налаштування гри.");
     }
-    const playerIds = source.players.map(function (player) { return player.id; });
+    const playerIds = source.players.map(function (player) {
+      return player.id;
+    });
     if (new Set(playerIds).size !== playerIds.length) throw new Error("Повторюються ідентифікатори гравців.");
     const rebuilt = JSON.parse(JSON.stringify(source));
-    rebuilt.players.forEach(function (player) { player.score = 0; });
+    rebuilt.players.forEach(function (player) {
+      player.score = 0;
+    });
     rebuilt.cycleState = createPlayerCycleState(rebuilt.players);
     rebuilt.barrelState = createBarrelState(rebuilt.players);
     rebuilt.rounds = [];
@@ -662,8 +719,12 @@
         throw new Error("Порушено порядок раундів.");
       }
       const primary = getRoundPrimary(original);
-      if (!["normal", "repaint"].includes(primary.resolution) ||
-        !primary.actuals || typeof primary.actuals !== "object" || Array.isArray(primary.actuals)) {
+      if (
+        !["normal", "repaint"].includes(primary.resolution) ||
+        !primary.actuals ||
+        typeof primary.actuals !== "object" ||
+        Array.isArray(primary.actuals)
+      ) {
         throw new Error(`Некоректні дані раунду ${original.sequence}.`);
       }
       const round = createRound(rebuilt);
@@ -674,8 +735,11 @@
       if (primary.resolution === "repaint") {
         const hasOrderingPlayer = playerIds.includes(original.orderingPlayerId);
         const hasConfirmedOrder = original.orderPoints !== null && original.orderPoints !== undefined;
-        if (!hasOrderingPlayer || !completed ||
-          (hasConfirmedOrder && !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints))) {
+        if (
+          !hasOrderingPlayer ||
+          !completed ||
+          (hasConfirmedOrder && !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints))
+        ) {
           throw new Error(`Некоректний розпис у раунді ${original.sequence}.`);
         }
         round.orderingPlayerId = original.orderingPlayerId;
@@ -685,8 +749,7 @@
       } else {
         const hasOrder = original.orderingPlayerId !== null || original.orderPoints !== null;
         if (hasOrder) {
-          if (!playerIds.includes(original.orderingPlayerId) ||
-            !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints)) {
+          if (!playerIds.includes(original.orderingPlayerId) || !isValidOrderForPlayer(rebuilt, original.orderingPlayerId, original.orderPoints)) {
             throw new Error(`Некоректний заказ у раунді ${original.sequence}.`);
           }
           round.orderingPlayerId = original.orderingPlayerId;
@@ -696,20 +759,33 @@
         }
         const inputIds = Object.keys(primary.actuals);
         const validOrderingResult = [null, "taken", "bite", "bite_ski"].includes(primary.orderingResult);
-        if (!validOrderingResult || inputIds.some(function (id) { return !playerIds.includes(id) || id === round.orderingPlayerId; }) ||
-          (completed && (inputIds.length !== playerIds.length - 1 || primary.orderingResult === null))) {
+        if (
+          !validOrderingResult ||
+          inputIds.some(function (id) {
+            return !playerIds.includes(id) || id === round.orderingPlayerId;
+          }) ||
+          (completed && (inputIds.length !== playerIds.length - 1 || primary.orderingResult === null))
+        ) {
           throw new Error(`Некоректні результати раунду ${original.sequence}.`);
         }
-        if (primary.orderingActualPoints !== null && primary.orderingActualPoints !== undefined &&
-          (primary.orderingActualPoints === "" || !Number.isInteger(Number(primary.orderingActualPoints)) ||
+        if (
+          primary.orderingActualPoints !== null &&
+          primary.orderingActualPoints !== undefined &&
+          (primary.orderingActualPoints === "" ||
+            !Number.isInteger(Number(primary.orderingActualPoints)) ||
             !isValidActualPoints(rebuilt.playerCount, primary.orderingActualPoints) ||
-            (primary.orderingResult === "taken" && Number(primary.orderingActualPoints) < round.orderPoints))) {
+            (primary.orderingResult === "taken" && Number(primary.orderingActualPoints) < round.orderPoints))
+        ) {
           throw new Error(`Некоректні фактичні бали раунду ${original.sequence}.`);
         }
         inputIds.forEach(function (playerId) {
           const input = primary.actuals[playerId];
-          if (input.action !== "actual" || input.actualPoints === null || input.actualPoints === "" ||
-            !isValidActualPoints(rebuilt.playerCount, input.actualPoints)) {
+          if (
+            input.action !== "actual" ||
+            input.actualPoints === null ||
+            input.actualPoints === "" ||
+            !isValidActualPoints(rebuilt.playerCount, input.actualPoints)
+          ) {
             throw new Error(`Некоректне Взято у раунді ${original.sequence}.`);
           }
         });
@@ -724,8 +800,7 @@
           if (!["ordering-player", "physical-play", "results", "ordering-factual"].includes(original.phase)) {
             throw new Error("Некоректна фаза поточного раунду.");
           }
-          if ((inputIds.length || primary.orderingResult !== null) &&
-            !["results", "ordering-factual"].includes(original.phase)) {
+          if ((inputIds.length || primary.orderingResult !== null) && !["results", "ordering-factual"].includes(original.phase)) {
             throw new Error("Результати внесено поза фазою Взято.");
           }
           rebuilt.activeRound.phase = original.phase;
@@ -743,15 +818,12 @@
   }
 
   function getBarrelHistoryPresentation(state, round, playerId) {
-    const entryOrder = round && round.barrel && Array.isArray(round.barrel.entryOrder)
-      ? round.barrel.entryOrder : [];
+    const entryOrder = round && round.barrel && Array.isArray(round.barrel.entryOrder) ? round.barrel.entryOrder : [];
     if (!entryOrder.includes(playerId)) return null;
     const rounds = state.rounds.concat(state.activeRound ? [state.activeRound] : []);
     const latestEntryRound = rounds.reduce(function (latest, candidateRound) {
-      const candidateOrder = candidateRound.barrel && Array.isArray(candidateRound.barrel.entryOrder)
-        ? candidateRound.barrel.entryOrder : [];
-      return candidateOrder.includes(playerId) && (!latest || candidateRound.sequence > latest.sequence)
-        ? candidateRound : latest;
+      const candidateOrder = candidateRound.barrel && Array.isArray(candidateRound.barrel.entryOrder) ? candidateRound.barrel.entryOrder : [];
+      return candidateOrder.includes(playerId) && (!latest || candidateRound.sequence > latest.sequence) ? candidateRound : latest;
     }, null);
     const barrel = state.barrelState && state.barrelState[playerId];
     const active = Boolean(barrel && barrel.onBarrel && latestEntryRound && latestEntryRound.sequence === round.sequence);
@@ -847,13 +919,15 @@
       helpExampleSection: document.getElementById("mariageHelpExampleSection"),
       helpExample: document.getElementById("mariageHelpExample"),
       helpIconClose: document.getElementById("mariageHelpIconClose"),
-      helpClose: document.getElementById("mariageHelpCloseButton")
+      helpClose: document.getElementById("mariageHelpCloseButton"),
     };
-    const helpStore = HELP ? HELP.createStore() : {
-      get: function () {
-        return Promise.resolve({ title: "Довідка", shortText: "Опис правила ще не додано.", paragraphs: [], example: "" });
-      }
-    };
+    const helpStore = HELP
+      ? HELP.createStore()
+      : {
+          get: function () {
+            return Promise.resolve({ title: "Довідка", shortText: "Опис правила ще не додано.", paragraphs: [], example: "" });
+          },
+        };
     let state = null;
     let draftOrderingPlayerId = null;
     let orderDialogOpen = false;
@@ -912,25 +986,13 @@
       return document.querySelector(`input[name='${name}']:checked`).value;
     }
 
-    function renderNameFields() {
+    function renderPlayerNameFields() {
       const count = Number(selectedValue("mariagePlayerCount"));
-      const existing = Array.from(elements.setupNames.querySelectorAll("input")).map(function (input) { return input.value; });
-      elements.setupNames.replaceChildren();
-      for (let index = 0; index < count; index += 1) {
-        const wrapper = document.createElement("div");
-        const label = document.createElement("label");
-        const input = document.createElement("input");
-        wrapper.className = "name-field";
-        label.htmlFor = `mariagePlayerName${index + 1}`;
-        label.textContent = `Гравець ${index + 1}`;
-        input.id = label.htmlFor;
-        input.type = "text";
-        input.maxLength = 10;
-        input.value = existing[index] || `Гравець ${index + 1}`;
-        input.addEventListener("focus", function () { input.select(); });
-        wrapper.append(label, input);
-        elements.setupNames.appendChild(wrapper);
-      }
+      playerNameFields.render({
+        container: elements.setupNames,
+        playerCount: count,
+        idPrefix: "mariagePlayerName",
+      });
     }
 
     function hasSavedGame() {
@@ -966,7 +1028,7 @@
         exact555Reset: document.getElementById("mariageExact555Reset").checked,
         players: names.map(function (input, index) {
           return { id: `p${index + 1}`, name: input.value.trim().slice(0, 10) };
-        })
+        }),
       });
       persist();
       showGame();
@@ -1022,23 +1084,28 @@
       elements.finalWinnerName.textContent = winner.name;
       elements.finalWinnerScore.textContent = `${winner.score} балів`;
       elements.finalStandings.replaceChildren();
-      state.players.slice().sort(function (left, right) { return right.score - left.score; }).forEach(function (player, index) {
-        const row = document.createElement("div");
-        const place = document.createElement("strong");
-        const name = document.createElement("span");
-        const score = document.createElement("strong");
-        row.className = "final-standing-row";
-        row.setAttribute("role", "listitem");
-        if (player.id === state.winnerPlayerId) row.classList.add("winner");
-        place.className = "final-standing-place";
-        place.textContent = `${index + 1} місце`;
-        name.className = "final-standing-name";
-        name.textContent = player.name;
-        score.className = "final-standing-score";
-        score.textContent = String(player.score);
-        row.append(place, name, score);
-        elements.finalStandings.appendChild(row);
-      });
+      state.players
+        .slice()
+        .sort(function (left, right) {
+          return right.score - left.score;
+        })
+        .forEach(function (player, index) {
+          const row = document.createElement("div");
+          const place = document.createElement("strong");
+          const name = document.createElement("span");
+          const score = document.createElement("strong");
+          row.className = "final-standing-row";
+          row.setAttribute("role", "listitem");
+          if (player.id === state.winnerPlayerId) row.classList.add("winner");
+          place.className = "final-standing-place";
+          place.textContent = `${index + 1} місце`;
+          name.className = "final-standing-name";
+          name.textContent = player.name;
+          score.className = "final-standing-score";
+          score.textContent = String(player.score);
+          row.append(place, name, score);
+          elements.finalStandings.appendChild(row);
+        });
     }
 
     function openFinalResults() {
@@ -1095,10 +1162,10 @@
           skiMode: elements.settingsSkiMode.value,
           repaint: {
             penaltyMode: elements.settingsRepaintMode.value,
-            awardMode: CONFIG.defaultRules.repaint.awardMode
+            awardMode: CONFIG.defaultRules.repaint.awardMode,
           },
-          exact555Reset: elements.settingsExact555.checked
-        }
+          exact555Reset: elements.settingsExact555.checked,
+        },
       });
       if (!isValidRules(rules)) {
         setMessage("Некоректні налаштування правил.");
@@ -1184,8 +1251,9 @@
     }
 
     function getDraftRound(sequence) {
-      return editDraft.rounds.concat(editDraft.activeRound ? [editDraft.activeRound] : [])
-        .find(function (round) { return round.sequence === sequence; });
+      return editDraft.rounds.concat(editDraft.activeRound ? [editDraft.activeRound] : []).find(function (round) {
+        return round.sequence === sequence;
+      });
     }
 
     function closeValueEditor() {
@@ -1222,32 +1290,43 @@
       elements.valueFields.replaceChildren();
       elements.valueError.textContent = "";
       if (target.field === "player") {
-        addValueField("Хто заказує", "player", "select", round.orderingPlayerId,
-          editDraft.players.map(function (player) { return { value: player.id, label: player.name }; }));
+        addValueField(
+          "Хто заказує",
+          "player",
+          "select",
+          round.orderingPlayerId,
+          editDraft.players.map(function (player) {
+            return { value: player.id, label: player.name };
+          }),
+        );
       } else if (target.field === "order") {
         addValueField("Сума заказу", "order", "number", round.orderPoints);
       } else if (target.field === "actual") {
         const input = round.primary.actuals[target.playerId];
         addValueField("Фактично взято", "actual", "number", input.actualPoints);
       } else if (target.field === "orderingResult") {
-        addValueField("Результат того, хто заказує", "orderingResult", "select", round.primary.orderingResult,
-          [{ value: "taken", label: "Взято" }, { value: "bite", label: "Байт" },
-            { value: "bite_ski", label: "Байт + Лижа" }]);
+        addValueField("Результат того, хто заказує", "orderingResult", "select", round.primary.orderingResult, [
+          { value: "taken", label: "Взято" },
+          { value: "bite", label: "Байт" },
+          { value: "bite_ski", label: "Байт + Лижа" },
+        ]);
       } else if (target.field === "orderingActualPoints") {
-        addValueField("Фактично взято (не впливає на рахунок)", "orderingActualPoints", "number",
-          round.primary.orderingActualPoints);
+        addValueField("Фактично взято (не впливає на рахунок)", "orderingActualPoints", "number", round.primary.orderingActualPoints);
       } else if (target.field === "resolution") {
-        const resolution = addValueField("Результат раунду", "resolution", "select", round.primary.resolution,
-          [{ value: "normal", label: "Взято" }, { value: "repaint", label: "Розпис" }]);
+        const resolution = addValueField("Результат раунду", "resolution", "select", round.primary.resolution, [
+          { value: "normal", label: "Взято" },
+          { value: "repaint", label: "Розпис" },
+        ]);
         const actualFields = document.createElement("div");
         actualFields.className = "mariage-value-fields";
         elements.valueFields.appendChild(actualFields);
         editDraft.players.forEach(function (player) {
           if (player.id === round.orderingPlayerId) {
-            const result = addValueField(`Результат: ${player.name}`, "orderingResult", "select",
-              round.primary.orderingResult || "taken",
-              [{ value: "taken", label: "Взято" }, { value: "bite", label: "Байт" },
-                { value: "bite_ski", label: "Байт + Лижа" }]);
+            const result = addValueField(`Результат: ${player.name}`, "orderingResult", "select", round.primary.orderingResult || "taken", [
+              { value: "taken", label: "Взято" },
+              { value: "bite", label: "Байт" },
+              { value: "bite_ski", label: "Байт + Лижа" },
+            ]);
             actualFields.appendChild(result.parentElement);
             return;
           }
@@ -1262,7 +1341,9 @@
           label.appendChild(control);
           actualFields.appendChild(label);
         });
-        const toggleFields = function () { actualFields.classList.toggle("hidden", resolution.value !== "normal"); };
+        const toggleFields = function () {
+          actualFields.classList.toggle("hidden", resolution.value !== "normal");
+        };
         resolution.addEventListener("change", toggleFields);
         toggleFields();
       }
@@ -1274,7 +1355,9 @@
     function saveValueEdit() {
       if (!editDraft || !valueTarget) return;
       const round = getDraftRound(valueTarget.sequence);
-      const field = function (name) { return elements.valueFields.querySelector(`[name="${name}"]`); };
+      const field = function (name) {
+        return elements.valueFields.querySelector(`[name="${name}"]`);
+      };
       if (valueTarget.field === "player") {
         round.orderingPlayerId = field("player").value;
       } else if (valueTarget.field === "order") {
@@ -1283,7 +1366,7 @@
         const raw = field("actual").value;
         round.primary.actuals[valueTarget.playerId] = {
           action: "actual",
-          actualPoints: raw === "" ? null : Number(raw)
+          actualPoints: raw === "" ? null : Number(raw),
         };
       } else if (valueTarget.field === "orderingResult") {
         round.primary.orderingResult = field("orderingResult").value;
@@ -1378,7 +1461,9 @@
       const orderPoints = Number(elements.orderPoints.value);
       const minimumOrder = getMinimumOrder(state, draftOrderingPlayerId);
       if (!isValidOrderForPlayer(state, draftOrderingPlayerId, orderPoints)) {
-        setMessage(`Для цього гравця заказ має бути від ${minimumOrder} до ${CONFIG.players[state.playerCount].maxOrder} і кратним ${CONFIG.orderStep}.`);
+        setMessage(
+          `Для цього гравця заказ має бути від ${minimumOrder} до ${CONFIG.players[state.playerCount].maxOrder} і кратним ${CONFIG.orderStep}.`,
+        );
         return;
       }
       if (!draftOrderingPlayerId) {
@@ -1565,7 +1650,9 @@
         button.type = "button";
         button.className = "secondary-button";
         button.textContent = player.name;
-        button.addEventListener("click", function () { selectOrderingPlayer(player.id); });
+        button.addEventListener("click", function () {
+          selectOrderingPlayer(player.id);
+        });
         elements.orderingPlayers.appendChild(button);
       });
     }
@@ -1577,7 +1664,9 @@
         button.type = "button";
         button.className = "secondary-button";
         button.textContent = player.name;
-        button.addEventListener("click", function () { selectResultPlayer(player.id); });
+        button.addEventListener("click", function () {
+          selectResultPlayer(player.id);
+        });
         elements.unresolvedPlayers.appendChild(button);
       });
     }
@@ -1601,7 +1690,9 @@
         bindDoubleActivation(button, { sequence: round.sequence, field, playerId });
         values.appendChild(button);
       };
-      const orderingPlayer = displayState.players.find(function (player) { return player.id === round.orderingPlayerId; });
+      const orderingPlayer = displayState.players.find(function (player) {
+        return player.id === round.orderingPlayerId;
+      });
       if (orderingPlayer) {
         addValue(`Заказує: ${orderingPlayer.name}`, "player");
         if (round.orderPoints !== null) addValue(`Заказ: ${round.orderPoints}`, "order");
@@ -1661,19 +1752,24 @@
           resultCell.className = "result-cell mariage-result-cell";
           scoreCell.className = "score-cell";
           if (result) {
-            const exact555Reset = Boolean(round.scoreRules && Array.isArray(round.scoreRules.exact555ResetPlayerIds) &&
-              round.scoreRules.exact555ResetPlayerIds.includes(player.id));
+            const exact555Reset = Boolean(
+              round.scoreRules &&
+              Array.isArray(round.scoreRules.exact555ResetPlayerIds) &&
+              round.scoreRules.exact555ResetPlayerIds.includes(player.id),
+            );
             const presentation = STATUS_ICONS.describeCell({
               barrel: barrelPresentation,
               result,
               rules: displayState.rules,
-              exact555Reset
+              exact555Reset,
             });
             STATUS_ICONS.renderCell(resultCell, presentation);
             scoreCell.textContent = String(result.cumulativeScore);
-            if (presentation.type !== "exact555Reset" &&
+            if (
+              presentation.type !== "exact555Reset" &&
               (isCycleComplete(displayState, player.id, "ski", result.skiCycleId) ||
-                isCycleComplete(displayState, player.id, "repaint", result.repaintCycleId))) {
+                isCycleComplete(displayState, player.id, "repaint", result.repaintCycleId))
+            ) {
               resultCell.classList.add("completed-cycle");
             }
             if (presentation.type !== "exact555Reset" && result.semantic.repaintBeneficiary) {
@@ -1725,13 +1821,18 @@
         elements.barrelLabel.textContent = `${barrelHolder.name}, спроба ${displayedAttempt}/${BARREL_MAX_ATTEMPTS}`;
       }
       const replayTarget = round || viewState.rounds[viewState.rounds.length - 1];
-      elements.replay.classList.toggle("hidden", editing || !isSupportedPlayerCount(state.playerCount) ||
-        !replayTarget || !replayTarget.startState ||
-        (round && !round.orderingPlayerId && round.orderPoints === null && !getResolvedPlayerIds(round).length));
+      elements.replay.classList.toggle(
+        "hidden",
+        editing ||
+          !isSupportedPlayerCount(state.playerCount) ||
+          !replayTarget ||
+          !replayTarget.startState ||
+          (round && !round.orderingPlayerId && round.orderPoints === null && !getResolvedPlayerIds(round).length),
+      );
       if (!isSupportedPlayerCount(state.playerCount)) {
-        elements.roundLabel.textContent = "—";
-        elements.orderingLabel.textContent = "—";
-        elements.orderLabel.textContent = "—";
+        elements.roundLabel.textContent = "--";
+        elements.orderingLabel.textContent = "--";
+        elements.orderLabel.textContent = "--";
         elements.newRound.classList.add("hidden");
         elements.orderPlayerStep.classList.add("hidden");
         elements.orderPointsStep.classList.add("hidden");
@@ -1743,12 +1844,15 @@
       }
       elements.roundLabel.textContent = round ? String(round.sequence) : viewState.rounds.length ? `Завершено ${viewState.rounds.length}` : "0";
       const orderingPlayer = round && getPlayer(viewState, round.orderingPlayerId || draftOrderingPlayerId);
-      elements.orderingLabel.textContent = orderingPlayer ? orderingPlayer.name : "—";
-      elements.orderLabel.textContent = round && round.orderPoints !== null ? String(round.orderPoints) : "—";
+      elements.orderingLabel.textContent = orderingPlayer ? orderingPlayer.name : "--";
+      elements.orderLabel.textContent = round && round.orderPoints !== null ? String(round.orderPoints) : "--";
       const canOpenOrder = viewState.status !== "completed" && (!round || (round.phase === "ordering-player" && !orderDialogOpen));
       elements.newRound.classList.toggle("hidden", !canOpenOrder);
       elements.newRound.textContent = round ? "Заказ" : "Новий раунд";
-      elements.orderPlayerStep.classList.toggle("hidden", !round || round.phase !== "ordering-player" || !orderDialogOpen || Boolean(draftOrderingPlayerId));
+      elements.orderPlayerStep.classList.toggle(
+        "hidden",
+        !round || round.phase !== "ordering-player" || !orderDialogOpen || Boolean(draftOrderingPlayerId),
+      );
       elements.orderPointsStep.classList.toggle("hidden", !round || round.phase !== "ordering-player" || !orderDialogOpen || !draftOrderingPlayerId);
       elements.playStep.classList.toggle("hidden", !round || round.phase !== "physical-play");
       elements.resultStep.classList.toggle("hidden", !round || round.phase !== "results");
@@ -1792,11 +1896,14 @@
     }
 
     document.querySelectorAll("input[name='mariagePlayerCount']").forEach(function (radio) {
-      radio.addEventListener("change", renderNameFields);
+      radio.addEventListener("change", renderPlayerNameFields);
     });
     document.getElementById("mariageSetupBackButton").addEventListener("click", showMenu);
     document.getElementById("mariageStartButton").addEventListener("click", startGame);
-    document.getElementById("mariageGameMenuButton").addEventListener("click", function () { persist(); showMenu(); });
+    document.getElementById("mariageGameMenuButton").addEventListener("click", function () {
+      persist();
+      showMenu();
+    });
     elements.newRound.addEventListener("click", beginRound);
     document.getElementById("mariageConfirmOrderButton").addEventListener("click", confirmOrder);
     elements.earlyRepaint.addEventListener("click", earlyRepaintRound);
@@ -1812,13 +1919,23 @@
       closeFinalResults();
       openReplayDialog();
     });
-    elements.finalClose.addEventListener("click", function () { closeFinalResults(); });
+    elements.finalClose.addEventListener("click", function () {
+      closeFinalResults();
+    });
     document.getElementById("mariageConfirmActualButton").addEventListener("click", enterActual);
     document.getElementById("mariageConfirmFactualButton").addEventListener("click", enterRequiredFactualPoints);
-    document.getElementById("mariageOrderingTakenButton").addEventListener("click", function () { enterQuick("taken"); });
-    document.getElementById("mariageBiteButton").addEventListener("click", function () { enterQuick("bite"); });
-    document.getElementById("mariageBiteSkiButton").addEventListener("click", function () { enterQuick("bite-ski"); });
-    document.getElementById("mariageSkiButton").addEventListener("click", function () { enterQuick("ski"); });
+    document.getElementById("mariageOrderingTakenButton").addEventListener("click", function () {
+      enterQuick("taken");
+    });
+    document.getElementById("mariageBiteButton").addEventListener("click", function () {
+      enterQuick("bite");
+    });
+    document.getElementById("mariageBiteSkiButton").addEventListener("click", function () {
+      enterQuick("bite-ski");
+    });
+    document.getElementById("mariageSkiButton").addEventListener("click", function () {
+      enterQuick("ski");
+    });
     document.getElementById("mariageResultBackButton").addEventListener("click", closeResultPlayer);
     elements.settingsButton.addEventListener("click", openSettings);
     elements.settingsClose.addEventListener("click", closeSettings);
@@ -1846,7 +1963,7 @@
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && !elements.helpDialog.classList.contains("hidden")) closeHelp();
     });
-    renderNameFields();
+    renderPlayerNameFields();
 
     return { hasSavedGame, continueGame, requestNewGame };
   }
@@ -1900,6 +2017,6 @@
     getPresentation,
     getBarrelHistoryPresentation,
     isCycleComplete,
-    initialize
+    initialize,
   };
 })();

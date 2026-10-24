@@ -32,23 +32,24 @@
 
 :root {
   --bg-img: url("../assets/backgrounds/img-bg-main.jpg");
-  --bg-main: rgb(220, 220, 255);
-  --bg-secondary: rgb(160, 160, 255);
-  --bg-accent: #f5f351;
-
-  --btn-bg-color: linear-gradient(90deg, #000 50%, #c80000 100%);
-  --btn-bg-color-hover: linear-gradient(90deg, #c80000 50%, #000 100%);
-  --btn-txt-color: #fff;
+  --bg-main: #dcdcff;
+  --bg-secondary: #0057b8;
+  --bg-accent: #ffd700;
 
   --color-main: #000046;
   --color-secondary: #000098;
-  --color-danger: rgb(200, 0, 0);
-  --color-success: rgb(0, 200, 0);
-  --color-active: #053e89;
+  --color-danger: #c80000;
+  --color-success: #00c800;
   --color-inactive: #eef0f2;
   --border-radius: 5px;
+  --color-active: #053e89;
 
   --padding-app-shell: 5px;
+
+  --btn-bg-color: linear-gradient(90deg, #000 50%, var(--color-danger) 100%);
+  --btn-bg-color-hover: linear-gradient(90deg, var(--color-danger) 50%, #000 100%);
+  --btn-txt-color: #fff;
+  --btn-border: 2px;
 
   --panel: #ffffff;
   --panel-soft: #eef4f7;
@@ -121,7 +122,7 @@ button:disabled {
 .setup-panel,
 .game-panel {
   background: var(--bg-main);
-  border: 1px solid var(--color-danger);
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: 5px;
 }
 
@@ -165,7 +166,7 @@ button:disabled {
   /* display: grid; */
   /* gap: 6px; */
   padding: 10px 20px;
-  border: 1px solid var(--color-danger);
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: var(--border-radius);
   color: var(--btn-txt-color);
   background: var(--btn-bg-color);
@@ -174,7 +175,7 @@ button:disabled {
 }
 
 .game-entry-txt {
-  font-size: 2.2rem;
+  font-size: clamp(2.2rem, 5vw, 3rem);
 }
 
 .menu-actions button span {
@@ -184,9 +185,12 @@ button:disabled {
 }
 
 .game-entry:not(:disabled):hover,
+.secondary-button:not(:disabled):hover,
 .game-entry:not(:disabled):focus-visible {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--bg-accent);
+  background: var(--bg-secondary);
+  color: var(--bg-accent);
+  box-shadow: 0px 0px 5px 2px var(--bg-accent);
 }
 
 .game-entry:disabled,
@@ -211,8 +215,12 @@ button:disabled {
 
 button:focus-visible,
 input:focus-visible {
-  outline: 3px solid var(--accent-strong);
-  outline-offset: 2px;
+  border-color: var(--bg-accent);
+  background: var(--bg-secondary);
+  color: var(--bg-accent);
+  box-shadow: 0px 0px 5px 2px var(--bg-accent);
+  outline: 2px solid var(--bg-accent);
+  outline-offset: 0px;
 }
 
 .main-title {
@@ -225,7 +233,7 @@ input:focus-visible {
   flex-direction: column;
   gap: 10px;
   height: calc(100dvh - (var(--padding-app-shell) * 2));
-  padding: 5px;
+  padding: var(--padding-app-shell);
 }
 
 .game-header,
@@ -233,7 +241,7 @@ input:focus-visible {
 .game-actions,
 .status-strip {
   display: flex;
-  align-items: center;
+  /* align-items: center; */
 }
 
 .game-header {
@@ -246,17 +254,26 @@ input:focus-visible {
   flex-wrap: wrap;
   justify-content: space-around;
   margin-top: 20px;
-  /* justify-content: center; */
 }
 
-.eyebrow,
-.status-label {
-  display: block;
+.eyebrow {
+  /* display: block; */
   color: var(--color-secondary);
   font-size: clamp(0.6rem, 3vw, 1rem);
   font-weight: 500;
-  letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.status-label {
+  color: var(--color-secondary);
+  font-size: clamp(0.6rem, 3.5vw, 1.8rem);
+  font-weight: 800;
+}
+
+@media (max-width: 575.98px) {
+  .status-label {
+    display: block;
+  }
 }
 
 h1 {
@@ -296,7 +313,7 @@ h1 {
 .game-length span {
   display: grid;
   place-items: center;
-  border: 1px solid var(--color-danger);
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: var(--border-radius);
   background: var(--btn-bg-color);
   font-weight: 800;
@@ -315,14 +332,15 @@ h1 {
 
 .player-count input:checked + span,
 .game-length input:checked + span {
-  color: #fff;
+  color: var(--bg-accent);
   background: var(--color-active);
+  border: var(--btn-border) solid var(--bg-accent);
 }
 
 .name-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 15px 25px;
+  gap: 15px;
 }
 
 .name-field-label {
@@ -336,7 +354,7 @@ h1 {
 .name-field-input {
   width: 100%;
   padding: 5px 10px;
-  border: 1px solid var(--color-danger);
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: 5px;
   color: var(--color-secondary);
   background: #fff;
@@ -353,15 +371,16 @@ h1 {
 .secondary-button {
   color: var(--btn-txt-color);
   background: var(--btn-bg-color);
-  border: 1px solid var(--color-danger);
-
+  border: var(--btn-border) solid var(--color-danger);
   padding: 10px 20px;
   border-radius: var(--border-radius);
   font-size: 1.7rem;
   font-weight: 800;
 }
 
-.btn-menu-burger {
+.btn-menu-burger,
+.btn-settings,
+.btn-close {
   width: 30px;
   height: 30px;
   border-radius: var(--border-radius);
@@ -372,7 +391,9 @@ h1 {
   overflow: hidden;
 }
 
-.icon-menu-burger {
+.icon-menu-burger,
+.icon-settings,
+.icon-close {
   width: 100%;
   object-fit: contain;
 }
@@ -389,7 +410,9 @@ h1 {
 } */
 
 .primary-button:hover {
-  background: var(--btn-bg-color-hover);
+  border-color: var(--bg-accent);
+  background: var(--bg-secondary);
+  color: var(--bg-accent);
 }
 
 /* .secondary-button {
@@ -401,9 +424,9 @@ h1 {
 .status-strip {
   flex-wrap: wrap;
   gap: 8px 14px;
-  justify-content: space-between;
-  padding: 6px;
-  border: 1px solid var(--color-danger);
+  justify-content: space-around;
+  padding: 5px;
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: 5px;
   background: var(--bg-main);
 }
@@ -413,14 +436,14 @@ h1 {
   text-align: center;
 }
 
-.status-strip strong {
-  font-size: 1.1rem;
+.status-label-value {
+  font-size: clamp(1.2rem, 6vw, 2rem);
 }
 
 .table-wrap {
   flex-grow: 1;
   overflow-y: auto;
-  border: 1px solid var(--line);
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: 5px;
   background: #fff;
 }
@@ -433,7 +456,7 @@ h1 {
 
 .score-table th,
 .score-table td {
-  border: 1px solid var(--color-danger);
+  border: var(--btn-border) solid var(--color-danger);
   text-align: center;
 }
 
@@ -511,7 +534,7 @@ h1 {
   max-height: calc(100dvh - 32px);
   overflow: auto;
   padding: 20px;
-  border: 1px solid var(--line);
+  border: var(--btn-border) solid var(--color-danger);
   border-radius: 5px;
   background: #fff;
   box-shadow: 0 24px 70px rgba(17, 24, 39, 0.3);
@@ -590,7 +613,7 @@ h1 {
   min-height: 48px;
 }
 
-@media (max-width: 520px) {
+/* @media (max-width: 520px) {
   .final-results-dialog {
     padding: 16px;
   }
@@ -603,4 +626,4 @@ h1 {
   .final-results-actions {
     grid-template-columns: 1fr;
   }
-}
+} */

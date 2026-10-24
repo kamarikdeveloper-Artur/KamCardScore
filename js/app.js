@@ -2,6 +2,7 @@
   "use strict";
 
   const storage = window.CardScoreStorage;
+  const playerNameFields = window.CardScorePlayerNameFields;
   const poker = window.Poker;
   const mariage = window.Mariage;
   const POKER_GAME_TYPE = "poker";
@@ -123,22 +124,12 @@
 
   function renderPlayerNameFields() {
     const playerCount = getSelectedPlayerCount();
-    pokerPlayerNameFields.innerHTML = "";
     updateGameLengthLabels();
-
-    for (let index = 0; index < playerCount; index += 1) {
-      const wrapper = document.createElement("div");
-      wrapper.className = "name-field";
-      wrapper.innerHTML = [
-        `<label class="name-field-label" for="pokerPlayerName${index + 1}">Гравець ${index + 1}</label>`,
-        `<input class="name-field-input" id="pokerPlayerName${index + 1}" type="text" maxlength="10" value="Гравець ${index + 1}">`,
-      ].join("");
-      const input = wrapper.querySelector("input");
-      input.addEventListener("focus", function () {
-        input.select();
-      });
-      pokerPlayerNameFields.appendChild(wrapper);
-    }
+    playerNameFields.render({
+      container: pokerPlayerNameFields,
+      playerCount,
+      idPrefix: "pokerPlayerName",
+    });
   }
 
   function createEmptyResult() {
