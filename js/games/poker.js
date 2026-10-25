@@ -22,13 +22,13 @@
       id: "clubs",
       symbol: "♣",
       name: "Трефи",
-      icon: "assets/suits/clubs.svg",
+      icon: "assets/suits/icon-clubs.svg",
     }),
     Object.freeze({
       id: "diamonds",
       symbol: "♦",
       name: "Бубни",
-      icon: "assets/suits/diamonds.svg",
+      icon: "assets/suits/icon-diamonds.svg",
     }),
   ]);
   const SUIT_IDS = Object.freeze(
@@ -49,22 +49,14 @@
     4: Object.freeze({ maxTricks: 8, roundCount: 4 }),
   });
   const SPECIAL_ROUND_MAXIMUM_BY_PLAYER_COUNT = Object.freeze(
-    Object.keys(SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT).reduce(function (
-      maximums,
-      playerCount,
-    ) {
-      maximums[playerCount] =
-        SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[playerCount].maxTricks;
+    Object.keys(SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT).reduce(function (maximums, playerCount) {
+      maximums[playerCount] = SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[playerCount].maxTricks;
       return maximums;
     }, {}),
   );
   const SPECIAL_REPEAT_COUNT_BY_PLAYER_COUNT = Object.freeze(
-    Object.keys(SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT).reduce(function (
-      counts,
-      playerCount,
-    ) {
-      counts[playerCount] =
-        SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[playerCount].roundCount;
+    Object.keys(SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT).reduce(function (counts, playerCount) {
+      counts[playerCount] = SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[playerCount].roundCount;
       return counts;
     }, {}),
   );
@@ -155,21 +147,16 @@
   }
 
   function getBaseRoundNumbers(playerCount, gameLength) {
-    return Array.from(
-      { length: getBaseRoundCount(playerCount, gameLength) },
-      function (_, index) {
-        return index + 1;
-      },
-    );
+    return Array.from({ length: getBaseRoundCount(playerCount, gameLength) }, function (_, index) {
+      return index + 1;
+    });
   }
 
   function getBaseRoundKey(roundNumber, baseDirection) {
     const value = Number(roundNumber);
     const direction = baseDirection || "ascending";
-    if (!Number.isInteger(value) || value < 1)
-      throw new Error("Invalid base round number");
-    if (!BASE_DIRECTIONS.includes(direction))
-      throw new Error("Invalid base round direction");
+    if (!Number.isInteger(value) || value < 1) throw new Error("Invalid base round number");
+    if (!BASE_DIRECTIONS.includes(direction)) throw new Error("Invalid base round direction");
     return `base-${direction === "ascending" ? "up" : "down"}-${value}`;
   }
 
@@ -206,15 +193,11 @@
   }
 
   function getSpecialMaxTricks(playerCount) {
-    return SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[
-      assertSupportedPlayerCount(playerCount)
-    ].maxTricks;
+    return SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[assertSupportedPlayerCount(playerCount)].maxTricks;
   }
 
   function getSpecialRoundCount(playerCount) {
-    return SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[
-      assertSupportedPlayerCount(playerCount)
-    ].roundCount;
+    return SPECIAL_ROUND_CONFIG_BY_PLAYER_COUNT[assertSupportedPlayerCount(playerCount)].roundCount;
   }
 
   function getSpecialRoundMaximum(playerCount) {
@@ -279,9 +262,7 @@
       return suit && suit.id;
     });
 
-    return normalized.every(Boolean) && new Set(normalized).size === 3
-      ? normalized
-      : null;
+    return normalized.every(Boolean) && new Set(normalized).size === 3 ? normalized : null;
   }
 
   function createSuitOrder(playerCount, randomSource) {
@@ -292,8 +273,7 @@
       return suitIds;
     }
 
-    const random =
-      typeof randomSource === "function" ? randomSource : Math.random;
+    const random = typeof randomSource === "function" ? randomSource : Math.random;
     for (let index = suitIds.length - 1; index > 0; index -= 1) {
       const randomIndex = Math.floor(random() * (index + 1));
       const temporarySuit = suitIds[index];
@@ -308,31 +288,18 @@
     const config = ROUND_TYPE_CONFIG[type];
     const descriptorOptions = options || {};
     if (!config) throw new Error("Unsupported round type");
-    if (
-      !Number.isInteger(descriptorOptions.sequenceIndex) ||
-      descriptorOptions.sequenceIndex < 0
-    ) {
+    if (!Number.isInteger(descriptorOptions.sequenceIndex) || descriptorOptions.sequenceIndex < 0) {
       throw new Error("Invalid round sequence index");
     }
-    if (
-      !Number.isInteger(descriptorOptions.maximum) ||
-      descriptorOptions.maximum < 0
-    ) {
+    if (!Number.isInteger(descriptorOptions.maximum) || descriptorOptions.maximum < 0) {
       throw new Error("Invalid round maximum");
     }
 
-    const suit =
-      type === "suit" ? getSuitDefinition(descriptorOptions.suit) : null;
+    const suit = type === "suit" ? getSuitDefinition(descriptorOptions.suit) : null;
     if (type === "suit" && !suit) throw new Error("Invalid suit round");
 
-    const orderedGameChoiceSource =
-      descriptorOptions.gameChoice === undefined
-        ? descriptorOptions.trumpSuit
-        : descriptorOptions.gameChoice;
-    const gameChoice =
-      type === "ordered-trump"
-        ? normalizeOrderedGameChoice(orderedGameChoiceSource)
-        : null;
+    const orderedGameChoiceSource = descriptorOptions.gameChoice === undefined ? descriptorOptions.trumpSuit : descriptorOptions.gameChoice;
+    const gameChoice = type === "ordered-trump" ? normalizeOrderedGameChoice(orderedGameChoiceSource) : null;
     const descriptor = {
       key: String(descriptorOptions.key),
       type,
@@ -355,10 +322,7 @@
       if (!BASE_DIRECTIONS.includes(descriptorOptions.baseDirection)) {
         throw new Error("Invalid base round direction");
       }
-      if (
-        !Number.isInteger(descriptorOptions.baseNumber) ||
-        descriptorOptions.baseNumber < 1
-      ) {
+      if (!Number.isInteger(descriptorOptions.baseNumber) || descriptorOptions.baseNumber < 1) {
         throw new Error("Invalid base round number");
       }
       descriptor.baseDirection = descriptorOptions.baseDirection;
@@ -368,11 +332,7 @@
     return descriptor;
   }
 
-  function createBaseRoundDescriptor(
-    roundNumber,
-    sequenceIndex,
-    baseDirection,
-  ) {
+  function createBaseRoundDescriptor(roundNumber, sequenceIndex, baseDirection) {
     const value = Number(roundNumber);
     const direction = baseDirection || "ascending";
     return createRoundDescriptor("base", {
@@ -387,44 +347,28 @@
 
   function getSequenceOffset(sequenceOffset) {
     const offset = sequenceOffset === undefined ? 0 : Number(sequenceOffset);
-    if (!Number.isInteger(offset) || offset < 0)
-      throw new Error("Invalid sequence offset");
+    if (!Number.isInteger(offset) || offset < 0) throw new Error("Invalid sequence offset");
     return offset;
   }
 
   function buildAscendingBaseRounds(playerCount, gameLength, sequenceOffset) {
     const offset = getSequenceOffset(sequenceOffset);
-    return getBaseRoundNumbers(playerCount, gameLength).map(
-      function (roundNumber, sequenceIndex) {
-        return createBaseRoundDescriptor(
-          roundNumber,
-          offset + sequenceIndex,
-          "ascending",
-        );
-      },
-    );
+    return getBaseRoundNumbers(playerCount, gameLength).map(function (roundNumber, sequenceIndex) {
+      return createBaseRoundDescriptor(roundNumber, offset + sequenceIndex, "ascending");
+    });
   }
 
   function buildSuitRounds(playerCount, sequenceOffset, selectedSuits) {
     const offset = getSequenceOffset(sequenceOffset);
     const suitCount = getSuitRoundCount(playerCount);
-    const suits =
-      selectedSuits === undefined
-        ? SUIT_IDS.slice(0, suitCount)
-        : normalizeSuitOrder(playerCount, selectedSuits);
+    const suits = selectedSuits === undefined ? SUIT_IDS.slice(0, suitCount) : normalizeSuitOrder(playerCount, selectedSuits);
 
     if (!suits || suits.length !== suitCount) {
       throw new Error("Invalid suit round selection");
     }
 
     return suits.map(function (suit, index) {
-      return createSpecialRoundDescriptor(
-        "suit",
-        index + 1,
-        offset + index,
-        playerCount,
-        { suit },
-      );
+      return createSpecialRoundDescriptor("suit", index + 1, offset + index, playerCount, { suit });
     });
   }
 
@@ -433,11 +377,7 @@
     return getBaseRoundNumbers(playerCount, gameLength)
       .reverse()
       .map(function (roundNumber, sequenceIndex) {
-        return createBaseRoundDescriptor(
-          roundNumber,
-          offset + sequenceIndex,
-          "descending",
-        );
+        return createBaseRoundDescriptor(roundNumber, offset + sequenceIndex, "descending");
       });
   }
 
@@ -445,16 +385,10 @@
     const offset = getSequenceOffset(sequenceOffset);
     const roundCount = getLobikyRoundCount(playerCount, gameLength);
     return Array.from({ length: roundCount }, function (_, index) {
-      return createSpecialRoundDescriptor(
-        "lobiky",
-        index + 1,
-        offset + index,
-        playerCount,
-        {
-          label: LOBIKY_LABELS[index],
-          maximum: LOBIKY_MAX_TRICKS,
-        },
-      );
+      return createSpecialRoundDescriptor("lobiky", index + 1, offset + index, playerCount, {
+        label: LOBIKY_LABELS[index],
+        maximum: LOBIKY_MAX_TRICKS,
+      });
     });
   }
 
@@ -462,61 +396,30 @@
     const offset = getSequenceOffset(sequenceOffset);
     const roundCount = getSpecialRoundCount(playerCount);
     return Array.from({ length: roundCount }, function (_, index) {
-      return createSpecialRoundDescriptor(
-        type,
-        index + 1,
-        offset + index,
-        playerCount,
-        {
-          label: labels[index],
-        },
-      );
+      return createSpecialRoundDescriptor(type, index + 1, offset + index, playerCount, {
+        label: labels[index],
+      });
     });
   }
 
   function buildDarkRounds(playerCount, sequenceOffset) {
-    return buildSpecialRoundBlock(
-      "temni",
-      DARK_LABELS,
-      playerCount,
-      sequenceOffset,
-    );
+    return buildSpecialRoundBlock("temni", DARK_LABELS, playerCount, sequenceOffset);
   }
 
   function buildNoTrumpRounds(playerCount, sequenceOffset) {
-    return buildSpecialRoundBlock(
-      "bezkozyrka",
-      NO_TRUMP_LABELS,
-      playerCount,
-      sequenceOffset,
-    );
+    return buildSpecialRoundBlock("bezkozyrka", NO_TRUMP_LABELS, playerCount, sequenceOffset);
   }
 
   function buildOrderedRounds(playerCount, sequenceOffset) {
-    return buildSpecialRoundBlock(
-      "ordered-trump",
-      ORDERED_LABELS,
-      playerCount,
-      sequenceOffset,
-    );
+    return buildSpecialRoundBlock("ordered-trump", ORDERED_LABELS, playerCount, sequenceOffset);
   }
 
   function buildMinesRounds(playerCount, sequenceOffset) {
-    return buildSpecialRoundBlock(
-      "mines",
-      MINES_LABELS,
-      playerCount,
-      sequenceOffset,
-    );
+    return buildSpecialRoundBlock("mines", MINES_LABELS, playerCount, sequenceOffset);
   }
 
   function buildGoldenRounds(playerCount, sequenceOffset) {
-    return buildSpecialRoundBlock(
-      "golden",
-      GOLDEN_LABELS,
-      playerCount,
-      sequenceOffset,
-    );
+    return buildSpecialRoundBlock("golden", GOLDEN_LABELS, playerCount, sequenceOffset);
   }
 
   function buildRepeatedSpecialRounds(playerCount, sequenceOffset) {
@@ -526,14 +429,7 @@
 
     return REPEATED_SPECIAL_ROUND_TYPES.reduce(function (rounds, type) {
       for (let occurrence = 1; occurrence <= repeatCount; occurrence += 1) {
-        rounds.push(
-          createSpecialRoundDescriptor(
-            type,
-            occurrence,
-            sequenceIndex,
-            playerCount,
-          ),
-        );
+        rounds.push(createSpecialRoundDescriptor(type, occurrence, sequenceIndex, playerCount));
         sequenceIndex += 1;
       }
       return rounds;
@@ -547,90 +443,34 @@
   function getPlayableRoundDescriptors(playerCount, gameLength, suitOrder) {
     const ascending = buildAscendingBaseRounds(playerCount, gameLength, 0);
     const suits = buildSuitRounds(playerCount, ascending.length, suitOrder);
-    const descending = buildDescendingBaseRounds(
-      playerCount,
-      gameLength,
-      ascending.length + suits.length,
-    );
-    const lobiky = buildLobikyRounds(
-      playerCount,
-      gameLength,
-      ascending.length + suits.length + descending.length,
-    );
-    const dark = buildDarkRounds(
-      playerCount,
-      ascending.length + suits.length + descending.length + lobiky.length,
-    );
-    const noTrump = buildNoTrumpRounds(
-      playerCount,
-      ascending.length +
-        suits.length +
-        descending.length +
-        lobiky.length +
-        dark.length,
-    );
+    const descending = buildDescendingBaseRounds(playerCount, gameLength, ascending.length + suits.length);
+    const lobiky = buildLobikyRounds(playerCount, gameLength, ascending.length + suits.length + descending.length);
+    const dark = buildDarkRounds(playerCount, ascending.length + suits.length + descending.length + lobiky.length);
+    const noTrump = buildNoTrumpRounds(playerCount, ascending.length + suits.length + descending.length + lobiky.length + dark.length);
     const ordered = buildOrderedRounds(
       playerCount,
-      ascending.length +
-        suits.length +
-        descending.length +
-        lobiky.length +
-        dark.length +
-        noTrump.length,
+      ascending.length + suits.length + descending.length + lobiky.length + dark.length + noTrump.length,
     );
     const mines = buildMinesRounds(
       playerCount,
-      ascending.length +
-        suits.length +
-        descending.length +
-        lobiky.length +
-        dark.length +
-        noTrump.length +
-        ordered.length,
+      ascending.length + suits.length + descending.length + lobiky.length + dark.length + noTrump.length + ordered.length,
     );
     const golden = buildGoldenRounds(
       playerCount,
-      ascending.length +
-        suits.length +
-        descending.length +
-        lobiky.length +
-        dark.length +
-        noTrump.length +
-        ordered.length +
-        mines.length,
+      ascending.length + suits.length + descending.length + lobiky.length + dark.length + noTrump.length + ordered.length + mines.length,
     );
-    return ascending.concat(
-      suits,
-      descending,
-      lobiky,
-      dark,
-      noTrump,
-      ordered,
-      mines,
-      golden,
-    );
+    return ascending.concat(suits, descending, lobiky, dark, noTrump, ordered, mines, golden);
   }
 
-  function createSpecialRoundDescriptor(
-    type,
-    occurrence,
-    sequenceIndex,
-    playerCount,
-    options,
-  ) {
+  function createSpecialRoundDescriptor(type, occurrence, sequenceIndex, playerCount, options) {
     const config = ROUND_TYPE_CONFIG[type];
     const descriptorOptions = options || {};
     const instance = Number(occurrence);
-    if (!config || type === "base")
-      throw new Error("Unsupported special round type");
-    if (!Number.isInteger(instance) || instance < 1)
-      throw new Error("Invalid special round occurrence");
+    if (!config || type === "base") throw new Error("Unsupported special round type");
+    if (!Number.isInteger(instance) || instance < 1) throw new Error("Invalid special round occurrence");
 
     let key = `${config.keyPrefix}-${instance}`;
-    let label =
-      descriptorOptions.label === undefined
-        ? config.label
-        : descriptorOptions.label;
+    let label = descriptorOptions.label === undefined ? config.label : descriptorOptions.label;
     if (type === "suit") {
       const suit = getSuitDefinition(descriptorOptions.suit);
       if (!suit) throw new Error("Invalid suit round");
@@ -642,9 +482,7 @@
       key,
       label,
       sequenceIndex,
-      maximum: Number.isInteger(descriptorOptions.maximum)
-        ? descriptorOptions.maximum
-        : getSpecialMaxTricks(playerCount),
+      maximum: Number.isInteger(descriptorOptions.maximum) ? descriptorOptions.maximum : getSpecialMaxTricks(playerCount),
       gameChoice: descriptorOptions.gameChoice,
       trumpSuit: descriptorOptions.trumpSuit,
       suit: descriptorOptions.suit,
@@ -695,15 +533,9 @@
     const config = ROUND_TYPE_CONFIG[type];
     if (!config) return null;
 
-    const sequenceIndex = Number.isInteger(roundData.sequenceIndex)
-      ? roundData.sequenceIndex
-      : getChronologicalRoundKeys(gameState).indexOf(key);
-    const baseRoundNumber = Number.isInteger(roundData.baseNumber)
-      ? roundData.baseNumber
-      : baseIdentity && baseIdentity.baseNumber;
-    const baseDirection = BASE_DIRECTIONS.includes(roundData.baseDirection)
-      ? roundData.baseDirection
-      : baseIdentity && baseIdentity.baseDirection;
+    const sequenceIndex = Number.isInteger(roundData.sequenceIndex) ? roundData.sequenceIndex : getChronologicalRoundKeys(gameState).indexOf(key);
+    const baseRoundNumber = Number.isInteger(roundData.baseNumber) ? roundData.baseNumber : baseIdentity && baseIdentity.baseNumber;
+    const baseDirection = BASE_DIRECTIONS.includes(roundData.baseDirection) ? roundData.baseDirection : baseIdentity && baseIdentity.baseDirection;
     const maximum = Number.isInteger(roundData.maximum)
       ? roundData.maximum
       : type === "base"
@@ -711,42 +543,20 @@
         : type === "lobiky"
           ? LOBIKY_MAX_TRICKS
           : getSpecialMaxTricks(gameState.playerCount);
-    const suitKeyMatch = /^suit-(spades|hearts|clubs|diamonds)(?:-\d+)?$/.exec(
-      key,
-    );
-    const suit =
-      type === "suit"
-        ? getSuitDefinition(
-            roundData.suit ||
-              (suitKeyMatch && suitKeyMatch[1]) ||
-              roundData.label,
-          )
-        : null;
-    if (sequenceIndex < 0 || maximum === null || !Number.isInteger(maximum))
-      return null;
-    if (
-      type === "base" &&
-      (!BASE_DIRECTIONS.includes(baseDirection) ||
-        !Number.isInteger(baseRoundNumber))
-    ) {
+    const suitKeyMatch = /^suit-(spades|hearts|clubs|diamonds)(?:-\d+)?$/.exec(key);
+    const suit = type === "suit" ? getSuitDefinition(roundData.suit || (suitKeyMatch && suitKeyMatch[1]) || roundData.label) : null;
+    if (sequenceIndex < 0 || maximum === null || !Number.isInteger(maximum)) return null;
+    if (type === "base" && (!BASE_DIRECTIONS.includes(baseDirection) || !Number.isInteger(baseRoundNumber))) {
       return null;
     }
     if (type === "suit" && !suit) return null;
 
     return createRoundDescriptor(type, {
       key,
-      label:
-        roundData.label === undefined
-          ? type === "base"
-            ? baseRoundNumber
-            : config.label
-          : roundData.label,
+      label: roundData.label === undefined ? (type === "base" ? baseRoundNumber : config.label) : roundData.label,
       sequenceIndex,
       maximum,
-      gameChoice:
-        roundData.gameChoice === undefined
-          ? roundData.trumpSuit
-          : roundData.gameChoice,
+      gameChoice: roundData.gameChoice === undefined ? roundData.trumpSuit : roundData.gameChoice,
       trumpSuit: roundData.trumpSuit,
       suit: suit && suit.id,
       baseDirection,
@@ -760,24 +570,19 @@
       if (!descriptor) throw new Error("Unknown round");
       return descriptor.maximum;
     }
-    if (
-      gameStateOrDescriptor &&
-      Number.isInteger(gameStateOrDescriptor.maximum)
-    ) {
+    if (gameStateOrDescriptor && Number.isInteger(gameStateOrDescriptor.maximum)) {
       return gameStateOrDescriptor.maximum;
     }
 
     const legacyMaximum = Number(gameStateOrDescriptor);
-    if (Number.isInteger(legacyMaximum) && legacyMaximum >= 0)
-      return legacyMaximum;
+    if (Number.isInteger(legacyMaximum) && legacyMaximum >= 0) return legacyMaximum;
     throw new Error("Unknown round maximum");
   }
 
   function getDealerIndex(sequenceIndex, playerCount) {
     const count = assertSupportedPlayerCount(playerCount);
     const index = Number(sequenceIndex);
-    if (!Number.isInteger(index) || index < 0)
-      throw new Error("Invalid round sequence index");
+    if (!Number.isInteger(index) || index < 0) throw new Error("Invalid round sequence index");
     return index % count;
   }
 
@@ -796,9 +601,7 @@
 
   function getPlayerOrderForRound(gameState, roundKey) {
     const descriptor = getRoundDescriptor(gameState, roundKey);
-    return descriptor
-      ? getPlayerOrder(descriptor.sequenceIndex, gameState.playerCount)
-      : [];
+    return descriptor ? getPlayerOrder(descriptor.sequenceIndex, gameState.playerCount) : [];
   }
 
   function getForbiddenLastOrder(roundMaximum, previousOrders) {
@@ -806,38 +609,20 @@
       return sum + Number(order || 0);
     }, 0);
     const forbiddenOrder = roundMaximum - previousOrdersSum;
-    return forbiddenOrder >= 0 && forbiddenOrder <= roundMaximum
-      ? forbiddenOrder
-      : null;
+    return forbiddenOrder >= 0 && forbiddenOrder <= roundMaximum ? forbiddenOrder : null;
   }
 
-  function getPreviousPlayedOrdersForPlayer(
-    gameState,
-    playerIndex,
-    currentRoundKey,
-  ) {
-    if (
-      !gameState ||
-      !Array.isArray(gameState.players) ||
-      !gameState.players[playerIndex]
-    )
-      return [];
+  function getPreviousPlayedOrdersForPlayer(gameState, playerIndex, currentRoundKey) {
+    if (!gameState || !Array.isArray(gameState.players) || !gameState.players[playerIndex]) return [];
     const playerId = gameState.players[playerIndex].id;
     const chronologicalRoundKeys = getChronologicalRoundKeys(gameState);
-    const currentRoundIndex = chronologicalRoundKeys.indexOf(
-      String(currentRoundKey),
-    );
-    const previousRoundKeys =
-      currentRoundIndex === -1
-        ? chronologicalRoundKeys
-        : chronologicalRoundKeys.slice(0, currentRoundIndex);
+    const currentRoundIndex = chronologicalRoundKeys.indexOf(String(currentRoundKey));
+    const previousRoundKeys = currentRoundIndex === -1 ? chronologicalRoundKeys : chronologicalRoundKeys.slice(0, currentRoundIndex);
 
     return previousRoundKeys.reduce(function (orders, roundKey) {
       const roundData = gameState.rounds[roundKey];
-      const result =
-        roundData && roundData.results && roundData.results[playerId];
-      if (result && result.ordered !== null && result.ordered !== undefined)
-        orders.push(result.ordered);
+      const result = roundData && roundData.results && roundData.results[playerId];
+      if (result && result.ordered !== null && result.ordered !== undefined) orders.push(result.ordered);
       return orders;
     }, []);
   }
@@ -845,49 +630,26 @@
   function isPassAllowedForPlayer(gameState, playerIndex, currentRoundKey) {
     const descriptor = getRoundDescriptor(gameState, currentRoundKey);
     if (descriptor && !descriptor.usesPassStreakRule) return true;
-    const previousOrders = getPreviousPlayedOrdersForPlayer(
-      gameState,
-      playerIndex,
-      currentRoundKey,
-    );
+    const previousOrders = getPreviousPlayedOrdersForPlayer(gameState, playerIndex, currentRoundKey);
     const recentOrders = previousOrders.slice(-2);
-    return !(
-      recentOrders.length === 2 &&
-      recentOrders[0] === 0 &&
-      recentOrders[1] === 0
-    );
+    return !(recentOrders.length === 2 && recentOrders[0] === 0 && recentOrders[1] === 0);
   }
 
-  function getDisabledOrderValues(
-    roundMaximum,
-    previousOrders,
-    isLastPlayer,
-    options,
-  ) {
+  function getDisabledOrderValues(roundMaximum, previousOrders, isLastPlayer, options) {
     const disabledValues = [];
     const validationOptions = options || {};
-    const currentRoundKey =
-      validationOptions.currentRoundKey === undefined
-        ? validationOptions.currentRound
-        : validationOptions.currentRoundKey;
+    const currentRoundKey = validationOptions.currentRoundKey === undefined ? validationOptions.currentRound : validationOptions.currentRoundKey;
 
     if (
       validationOptions.gameState &&
       Number.isInteger(validationOptions.playerIndex) &&
       currentRoundKey !== undefined &&
-      !isPassAllowedForPlayer(
-        validationOptions.gameState,
-        validationOptions.playerIndex,
-        currentRoundKey,
-      )
+      !isPassAllowedForPlayer(validationOptions.gameState, validationOptions.playerIndex, currentRoundKey)
     )
       disabledValues.push(0);
 
     if (isLastPlayer) {
-      const forbiddenOrder = getForbiddenLastOrder(
-        roundMaximum,
-        previousOrders,
-      );
+      const forbiddenOrder = getForbiddenLastOrder(roundMaximum, previousOrders);
       if (forbiddenOrder !== null) disabledValues.push(forbiddenOrder);
     }
 
@@ -896,18 +658,8 @@
     });
   }
 
-  function getAllowedOrderValues(
-    roundMaximum,
-    previousOrders,
-    isLastPlayer,
-    options,
-  ) {
-    const disabledValues = getDisabledOrderValues(
-      roundMaximum,
-      previousOrders,
-      isLastPlayer,
-      options,
-    );
+  function getAllowedOrderValues(roundMaximum, previousOrders, isLastPlayer, options) {
+    const disabledValues = getDisabledOrderValues(roundMaximum, previousOrders, isLastPlayer, options);
     return Array.from({ length: roundMaximum + 1 }, function (_, value) {
       return value;
     }).filter(function (value) {
@@ -915,22 +667,10 @@
     });
   }
 
-  function isOrderAllowed(
-    roundMaximum,
-    orderValue,
-    previousOrders,
-    isLastPlayer,
-    options,
-  ) {
+  function isOrderAllowed(roundMaximum, orderValue, previousOrders, isLastPlayer, options) {
     const value = Number(orderValue);
-    if (!Number.isInteger(value) || value < 0 || value > roundMaximum)
-      return false;
-    return !getDisabledOrderValues(
-      roundMaximum,
-      previousOrders,
-      isLastPlayer,
-      options,
-    ).includes(value);
+    if (!Number.isInteger(value) || value < 0 || value > roundMaximum) return false;
+    return !getDisabledOrderValues(roundMaximum, previousOrders, isLastPlayer, options).includes(value);
   }
 
   function getRoundOrderStatus(roundMaximum, orderedValues, requiresOrder) {
@@ -973,10 +713,7 @@
   }
 
   function getAllowedActualValues(roundMaximum, actualValues) {
-    const remainingTricks = getRemainingActualTricks(
-      roundMaximum,
-      actualValues,
-    );
+    const remainingTricks = getRemainingActualTricks(roundMaximum, actualValues);
     return Array.from({ length: remainingTricks + 1 }, function (_, value) {
       return value;
     });
@@ -984,10 +721,7 @@
 
   function isActualAllowed(roundMaximum, actualValue, previousActualValues) {
     const value = Number(actualValue);
-    const remainingTricks = getRemainingActualTricks(
-      roundMaximum,
-      previousActualValues,
-    );
+    const remainingTricks = getRemainingActualTricks(roundMaximum, previousActualValues);
     return Number.isInteger(value) && value >= 0 && value <= remainingTricks;
   }
 
@@ -1018,8 +752,7 @@
   function calculateRoundScore(scoringType, ordered, actual) {
     if (scoringType === "mines") return calculateMinesScore(actual);
     if (scoringType === "golden") return calculateGoldenScore(actual);
-    if (scoringType === "lobiky")
-      return calculateLobikyScore(ordered, actual);
+    if (scoringType === "lobiky") return calculateLobikyScore(ordered, actual);
     return calculateScore(ordered, actual);
   }
 

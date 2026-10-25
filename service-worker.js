@@ -1,7 +1,7 @@
 "use strict";
 
 const CACHE_PREFIX = "cardscore-";
-const CACHE_NAME = `${CACHE_PREFIX}v25`;
+const CACHE_NAME = `${CACHE_PREFIX}v28`;
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -22,8 +22,8 @@ const APP_SHELL = [
   "./assets/backgrounds/img-bg-main.jpg",
   "./assets/suits/icon-spades.svg",
   "./assets/suits/icon-hearts.svg",
-  "./assets/suits/clubs.svg",
-  "./assets/suits/diamonds.svg",
+  "./assets/suits/icon-clubs.svg",
+  "./assets/suits/icon-diamonds.svg",
   "./assets/icons/img-app-192.png",
   "./assets/icons/img-app-256.png",
   "./assets/icons/img-app-512.png",
@@ -58,11 +58,8 @@ self.addEventListener("activate", function (event) {
       .then(function (cacheNames) {
         return Promise.all(
           cacheNames.map(function (cacheName) {
-            const isObsoleteCardScoreCache =
-              cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME;
-            return isObsoleteCardScoreCache
-              ? caches.delete(cacheName)
-              : Promise.resolve(false);
+            const isObsoleteCardScoreCache = cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME;
+            return isObsoleteCardScoreCache ? caches.delete(cacheName) : Promise.resolve(false);
           }),
         );
       })

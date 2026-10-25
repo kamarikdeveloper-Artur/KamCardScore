@@ -44,7 +44,6 @@
   const numberPickerDialog = pokerNumberPickerOverlay.querySelector(".number-picker-dialog");
   const pokerNumberPickerTitle = document.getElementById("pokerNumberPickerTitle");
   const pokerNumberPickerPlayer = document.getElementById("pokerNumberPickerPlayer");
-  const pokerNumberPickerOrderContext = document.getElementById("pokerNumberPickerOrderContext");
   const pokerNumberPickerGameChoiceSection = document.getElementById("pokerNumberPickerGameChoiceSection");
   const pokerNumberPickerGameChoices = document.getElementById("pokerNumberPickerGameChoices");
   const pokerNumberPickerPlayerSection = document.getElementById("pokerNumberPickerPlayerSection");
@@ -52,7 +51,6 @@
   const pokerNumberPickerValues = document.getElementById("pokerNumberPickerValues");
   const pokerNumberPickerConfirmButton = document.getElementById("pokerNumberPickerConfirmButton");
   const pokerNumberPickerCloseButton = document.getElementById("pokerNumberPickerCloseButton");
-  const pokerNumberPickerCancelButton = document.getElementById("pokerNumberPickerCancelButton");
   const pokerFinalResultsOverlay = document.getElementById("pokerFinalResultsOverlay");
   const finalResultsDialog = pokerFinalResultsOverlay.querySelector(".final-results-dialog");
   const pokerFinalResultsTitle = document.getElementById("pokerFinalResultsTitle");
@@ -73,7 +71,6 @@
   const wheelPicker = window.CardScoreWheelPicker.create({
     viewport: pokerNumberPickerValues,
     confirmButton: pokerNumberPickerConfirmButton,
-    cancelButton: pokerNumberPickerCancelButton,
   });
 
   function syncRoundOrderStatusClearance() {
@@ -600,9 +597,11 @@
   }
 
   function getGameDefinition(gameId) {
-    return GAME_REGISTRY.find(function (game) {
-      return game.id === gameId;
-    }) || null;
+    return (
+      GAME_REGISTRY.find(function (game) {
+        return game.id === gameId;
+      }) || null
+    );
   }
 
   function openGameMenu(gameId) {
@@ -813,10 +812,10 @@
     pokerRoundOrderClassification.classList.toggle("hidden", !status.classification);
 
     if (status.classification === "shortage") {
-      pokerRoundOrderClassification.textContent = `НЕДОБОР: ${status.difference}`;
+      pokerRoundOrderClassification.textContent = `Недобор: ${status.difference}`;
       pokerRoundOrderClassification.classList.add("round-status--shortage");
     } else if (status.classification === "overage") {
-      pokerRoundOrderClassification.textContent = `ПЕРЕБОР: ${Math.abs(status.difference)}`;
+      pokerRoundOrderClassification.textContent = `Перебор: ${Math.abs(status.difference)}`;
       pokerRoundOrderClassification.classList.add("round-status--overage");
     } else {
       pokerRoundOrderClassification.textContent = "";
@@ -995,9 +994,7 @@
       }
 
       scoreCell.className = "score-cell";
-      if (result.totalScore > 0) {
-        scoreCell.classList.add("positive");
-      } else if (result.totalScore < 0) {
+      if (result.totalScore < 0) {
         scoreCell.classList.add("negative");
       }
       scoreCell.textContent = result.totalScore === null ? "" : String(result.totalScore);
@@ -1084,7 +1081,6 @@
     return {
       title,
       playerName: inputPlayer ? inputPlayer.name : "Round complete",
-      orderContext: authoritativeOrder === null || authoritativeOrder === undefined ? "" : `Замовив: ${authoritativeOrder}`,
       requiresGameChoice,
       gameChoices: requiresGameChoice ? poker.ORDERED_GAME_CHOICES.map(poker.getOrderedGameChoiceDefinition) : [],
       selectedGameChoice: requiresGameChoice ? roundData.gameChoice : null,
@@ -1130,12 +1126,12 @@
   }
 
   function openNumberPicker(options) {
+    const hasPlayerOptions = options.playerOptions.length > 0;
     pokerNumberPickerTitle.textContent = options.title;
     pokerNumberPickerPlayer.textContent = options.playerName;
-    pokerNumberPickerOrderContext.textContent = options.orderContext || "";
-    pokerNumberPickerOrderContext.classList.toggle("hidden", !options.orderContext);
+    pokerNumberPickerPlayer.classList.toggle("hidden", hasPlayerOptions);
     pokerNumberPickerGameChoiceSection.classList.toggle("hidden", !options.requiresGameChoice);
-    pokerNumberPickerPlayerSection.classList.toggle("hidden", options.playerOptions.length === 0);
+    pokerNumberPickerPlayerSection.classList.toggle("hidden", !hasPlayerOptions);
     pokerNumberPickerGameChoices.innerHTML = "";
     pokerNumberPickerPlayers.innerHTML = "";
     let selectedGameChoice = poker.normalizeOrderedGameChoice(options.selectedGameChoice);
@@ -1208,7 +1204,6 @@
       onConfirm: function (value) {
         options.onConfirm(value, selectedGameChoice);
       },
-      onCancel: closeNumberPicker,
     });
     numberPickerDialog.focus();
   }
@@ -1783,8 +1778,12 @@
   renderPlayerNameFields();
   mariageController = mariage.initialize({
     storage,
-    navigate: function (view) { showView(view, mariage.GAME_TYPE); },
-    showMenu: function () { openGameMenu(mariage.GAME_TYPE); },
+    navigate: function (view) {
+      showView(view, mariage.GAME_TYPE);
+    },
+    showMenu: function () {
+      openGameMenu(mariage.GAME_TYPE);
+    },
   });
   gameControllers.set(POKER_GAME_TYPE, {
     hasSavedGame: hasPokerSavedGame,

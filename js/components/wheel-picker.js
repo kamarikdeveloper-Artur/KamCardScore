@@ -16,7 +16,6 @@
   function create(options) {
     const viewport = options.viewport;
     const confirmButton = options.confirmButton;
-    const cancelButton = options.cancelButton;
     let configuration = null;
     let selectedValue = null;
     let externalConfirmationAllowed = true;
@@ -115,7 +114,6 @@
         values: nextConfiguration.values.slice(),
         isValueAllowed: nextConfiguration.isValueAllowed,
         onConfirm: nextConfiguration.onConfirm,
-        onCancel: nextConfiguration.onCancel,
         onSelectionChange: nextConfiguration.onSelectionChange,
       };
       externalConfirmationAllowed = nextConfiguration.canConfirm !== false;
@@ -186,10 +184,6 @@
       if (!configuration || !isSelectedValueAllowed()) return;
       configuration.onConfirm(selectedValue);
     });
-    cancelButton.addEventListener("click", function () {
-      if (configuration && configuration.onCancel) configuration.onCancel();
-    });
-
     return {
       configure,
       getSelectedValue: function () {

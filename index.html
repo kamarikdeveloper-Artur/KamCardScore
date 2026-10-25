@@ -26,16 +26,15 @@
     <main class="app-shell">
       <section class="shell-panel" id="gameHubPanel" data-view="hub">
         <header class="shell-heading">
-          <p class="eyebrow">Картковий блокнот</p>
-          <h1>Нотатник балів</h1>
+          <p class="shell-heading-subtitle">Картковий блокнот</p>
+          <h1 class="shell-heading-title">Нотатник балів</h1>
         </header>
         <div class="game-registry" id="gameRegistry" aria-label="Ігри"></div>
       </section>
 
       <section class="shell-panel hidden" id="gameMenuPanel" data-view="menu">
         <header class="shell-heading">
-          <p class="eyebrow">Нотатник</p>
-          <h1 class="title-game-neme" data-role="game-title"></h1>
+          <h1 class="shell-heading-title" data-role="game-title"></h1>
         </header>
         <div class="menu-actions">
           <button class="primary-button" data-action="new-game" type="button">Нова гра</button>
@@ -46,8 +45,8 @@
         </div>
       </section>
 
-      <section class="setup-panel hidden" id="mariageSetupPanel" data-view="setup" data-game-id="mariage">
-        <div class="main-title"><h1>Мар'яж</h1></div>
+      <section class="setup-panel setup-panel-game hidden" id="mariageSetupPanel" data-view="setup" data-game-id="mariage">
+        <div class="main-title"><h1 class="shell-heading-title">Мар'яж</h1></div>
         <fieldset class="player-count" id="mariagePlayerCount">
           <legend class="player-count-title">Кількість гравців:</legend>
           <label><input type="radio" name="mariagePlayerCount" value="3" checked /><span>3</span></label>
@@ -77,7 +76,6 @@
       <section class="game-panel hidden" id="mariageGamePanel" data-view="game" data-game-id="mariage">
         <header class="game-header">
           <div>
-            <p class="eyebrow">Таблиця балів</p>
             <h1>Мар'яж</h1>
           </div>
           <div class="game-actions">
@@ -90,9 +88,15 @@
           </div>
         </header>
         <section class="status-strip" aria-live="polite">
-          <div><span class="status-label">Раунд:</span><strong class="status-label-value" id="mariageRoundLabel">0</strong></div>
-          <div><span class="status-label">Заказує:</span><strong class="status-label-value" id="mariageOrderingLabel">-</strong></div>
-          <div><span class="status-label">Заказ:</span><strong class="status-label-value" id="mariageOrderLabel">-</strong></div>
+          <div class="status-strip-column">
+            <span class="status-label">Раунд</span><strong class="status-label-value" id="mariageRoundLabel">0</strong>
+          </div>
+          <div class="status-strip-column">
+            <span class="status-label">Заказує</span><strong class="status-label-value" id="mariageOrderingLabel">-</strong>
+          </div>
+          <div class="status-strip-column">
+            <span class="status-label">Заказ</span><strong class="status-label-value" id="mariageOrderLabel">-</strong>
+          </div>
           <div class="hidden" id="mariageBarrelStatus">
             <span class="status-label"
               >Бочка <button class="mariage-info-button" type="button" data-mariage-help="barrel" aria-label="Пояснення: Бочка">ⓘ</button> </span
@@ -308,9 +312,9 @@
         </div>
       </div>
 
-      <section class="setup-panel hidden" id="pokerSetupPanel" data-view="setup" data-game-id="poker">
+      <section class="setup-panel setup-panel-game hidden" id="pokerSetupPanel" data-view="setup" data-game-id="poker">
         <div class="main-title">
-          <h1 class="name-current-game">Покер</h1>
+          <h1 class="shell-heading-title">Покер</h1>
         </div>
 
         <fieldset class="player-count">
@@ -352,32 +356,35 @@
       <section class="game-panel hidden" id="pokerGamePanel" data-view="game" data-game-id="poker">
         <header class="game-header">
           <div>
-            <p class="eyebrow">Таблиця балів</p>
             <h1>Покер</h1>
           </div>
 
           <div class="game-actions">
             <button class="secondary-button hidden" id="pokerResultsButton" type="button">Результати</button>
             <button class="btn-menu-burger" id="pokerGameMenuButton" type="button">
-              <img class="icon-menu-burger" src="/assets/icons/icon-menu-burger.svg" alt="Меню" />
+              <img class="icon-menu-burger" src="/assets/icons/icon-menu-burger.svg" alt="" />
             </button>
           </div>
         </header>
 
         <section class="status-strip" aria-live="polite">
-          <div>
-            <span class="status-label">Раунд:</span>
+          <div class="status-strip-column">
+            <span class="status-label">Раунд</span>
             <strong class="status-label-value" id="pokerCurrentRoundLabel">1</strong>
           </div>
-          <div>
-            <span class="status-label">Роздає:</span>
+          <div class="status-strip-column">
+            <span class="status-label">Роздає</span>
             <strong class="status-label-value" id="pokerCurrentDealerLabel">Гравець 1</strong>
           </div>
-          <div>
-            <span class="status-label">Обяз:</span>
+          <div class="status-strip-column">
+            <span class="status-label">Обяз</span>
             <strong class="status-label-value" id="pokerActivePlayerLabel">Гравець 1</strong>
           </div>
         </section>
+
+        <div class="table-wrap" aria-label="Таблиця балів Покеру">
+          <table class="score-table" id="pokerScoreTable"></table>
+        </div>
 
         <section class="current-turn-action" id="pokerCurrentTurnAction" aria-live="polite">
           <div class="current-turn-copy">
@@ -386,9 +393,9 @@
           <button class="primary-button current-turn-button" id="pokerCurrentTurnButton" type="button">Замовити</button>
         </section>
 
-        <div class="table-wrap" aria-label="Таблиця балів Покеру">
+        <!-- <div class="table-wrap" aria-label="Таблиця балів Покеру">
           <table class="score-table" id="pokerScoreTable"></table>
-        </div>
+        </div> -->
 
         <div class="round-order-status-bar hidden" id="pokerRoundOrderStatusBar">
           <div class="round-order-status" id="pokerRoundOrderStatus" aria-live="polite">
@@ -404,7 +411,6 @@
             <div>
               <span class="status-label" id="pokerNumberPickerTitle">Заказ взяток</span>
               <strong id="pokerNumberPickerPlayer">Гравець 1</strong>
-              <p class="number-picker-order-context hidden" id="pokerNumberPickerOrderContext"></p>
             </div>
             <button class="btn-close" id="pokerNumberPickerCloseButton" type="button" aria-label="Close">
               <img class="icon-close" src="/assets/icons/icon-X-close.svg" alt="" />
@@ -415,7 +421,6 @@
             <div class="game-choice-buttons" id="pokerNumberPickerGameChoices" role="group" aria-label="Вибір гри"></div>
           </div>
           <div class="number-picker-player-section hidden" id="pokerNumberPickerPlayerSection">
-            <span class="status-label">Гравець</span>
             <div class="number-picker-players" id="pokerNumberPickerPlayers" role="group" aria-label="Вибір гравця для фактичних взяток"></div>
           </div>
           <div class="wheel-picker-shell">
@@ -424,7 +429,6 @@
           </div>
           <div class="number-picker-actions">
             <button class="primary-button" id="pokerNumberPickerConfirmButton" type="button" disabled>Підтвердити</button>
-            <button class="secondary-button" id="pokerNumberPickerCancelButton" type="button">Закрити</button>
           </div>
         </div>
       </div>
